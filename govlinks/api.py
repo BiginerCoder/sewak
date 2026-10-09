@@ -23,17 +23,24 @@ DEVELOPMENT ONLY: there is no authentication. user_id is taken from the request,
 Before real use, derive user_id from a verified session token and rate-limit every endpoint.
 """
 import json
+import logging
 import os
 import urllib.parse
+from pathlib import Path
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import psycopg2
+from dotenv import load_dotenv
+
+load_dotenv(Path(__file__).resolve().parent / ".env")
 
 from govlinks.db import connect
 from govlinks.fetcher import domain_allowed, host_of
 from govlinks.recommender import give_feedback, record_outcome, recommend, start_visit, vote
 
 ALLOW_DEMO = os.environ.get("GOVLINKS_ALLOW_DEMO") == "1"
+HOST = os.environ.get("GOVLINKS_HOST", "127.0.0.1")
+PORT = int(os.environ.get("PORT", os.environ.get("GOVLINKS_PORT", "8080")))
 
 
 def _int(v):
@@ -66,8 +73,14 @@ def _rows(cur):
 
 
 class Handler(BaseHTTPRequestHandler):
-    def log_message(self, *a):
-        pass
+    def log_message(self, fmt, *args):
+        logging.info(
+            "client=%s method=%s path=%s response=%s",
+            self.client_address[0],
+            self.command,
+            self.path.partition("?")[0],
+            args[0] if args else "",
+        )
 
     def _json(self, code, obj):
         data = json.dumps(obj, default=str).encode()
@@ -183,5 +196,9 @@ class Handler(BaseHTTPRequestHandler):
 
 
 if __name__ == "__main__":
-    print("API on http://127.0.0.1:8080", "(demo mode)" if ALLOW_DEMO else "")
-    ThreadingHTTPServer(("127.0.0.1", 8080), Handler).serve_forever()
+    if ALLOW_DEMO and HOST not in {"127.0.0.1", "localhost", "::1"}:
+        raise RuntimeError("Demo mode may only bind to a loopback interface.")
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+    server = ThreadingHTTPServer((HOST, PORT), Handler)
+    logging.info("Govlinks API listening on %s:%s%s", HOST, PORT, " (demo mode)" if ALLOW_DEMO else "")
+    server.serve_forever()

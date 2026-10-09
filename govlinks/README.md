@@ -1,26 +1,38 @@
-# Government service discovery: temporary PostgreSQL build
+# Govlinks
 
-A working prototype of the data model, link fetching and ranking logic from the SRS
-"Government Service Discovery & Intelligent Website Recommendation System" (v1.0).
-It answers: *which government service link is most likely to solve this problem for this location?*
+Govlinks is the Python API and PostgreSQL-backed recommendation engine used by
+the Sewak frontend. It answers: *which government service link is most likely
+to solve this problem for this location?*
 
-Everything runs on a throwaway PostgreSQL instance and synthetic data. Nothing here talks to a real government
-site except the two portals listed under "Real vs placeholder" (and only if you let the fetcher run).
+This is a development prototype using synthetic data. The API has no
+authentication and is not ready for public production use. See the repository
+root [README](../README.md) for combined setup and production limitations.
 
 ## Run it
 
-```
-pip install psycopg2-binary
-./start_db.sh            # throwaway PostgreSQL 16 on port 5433, data in /tmp/pgdata_govlinks
-python3 demo.py          # builds the database, runs a simulated community, prints rankings, 48 checks
-python3 test_api.py      # 22 checks against every API endpoint (run demo.py first)
-python3 bench.py         # latency benchmark at 20,000 links / 200,000 visits (about 1 minute)
-python3 api.py           # development API on 127.0.0.1:8080
-python3 maintenance.py refresh | check-links | discover <website_id>
+Create a PostgreSQL database, copy `.env.example` to `.env`, and set
+`GOVLINKS_DSN` to your local connection. Load a new development database in
+order:
+
+```powershell
+$env:GOVLINKS_DSN = "host=localhost port=5433 user=postgres dbname=govlinks_demo"
+psql "$env:GOVLINKS_DSN" -v ON_ERROR_STOP=1 -f sql\01_schema.sql
+psql "$env:GOVLINKS_DSN" -v ON_ERROR_STOP=1 -f sql\02_ranking.sql
+psql "$env:GOVLINKS_DSN" -v ON_ERROR_STOP=1 -f sql\03_seed.sql
+py -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+python api.py
 ```
 
-`start_db.sh` assumes a Debian/Ubuntu PostgreSQL install and root. On your own machine, point `GOVLINKS_DSN` at any
-PostgreSQL 14+ database and load `sql/01_schema.sql`, `02_ranking.sql`, `03_seed.sql` in order.
+The API listens on `127.0.0.1:8080` by default. Set `GOVLINKS_HOST`,
+`PORT`, and `GOVLINKS_ALLOW_DEMO` through the environment for local deployment
+configuration. Demo mode may only bind to a loopback address.
+
+The test and benchmark tools use synthetic/demo data. **`demo.py` drops and
+recreates the `govlinks_demo` database; only run it against a disposable
+database.** To exercise API tests, initialize the demo schema and seed with the
+SQL files above, then run `python test_api.py`.
 
 ## Layout
 
