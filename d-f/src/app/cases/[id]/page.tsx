@@ -13,12 +13,15 @@ import { useParams } from "next/navigation";
 import { useDemoData } from "@/lib/demo-store";
 
 export default function CaseDetail() {
-  const { data } = useDemoData();
+  const { data, isReady } = useDemoData();
   const { id } = useParams<{ id: string }>();
   const n = Number(id);
   if (!Number.isInteger(n)) notFound();
   const d = getIssueDetail(data, n);
-  if (!d) notFound();
+  if (!d) {
+    if (!isReady) return <div className="card empty" role="status">Loading saved demo case…</div>;
+    notFound();
+  }
   const { issue } = d;
   const cat = categoryOf(issue.category);
   const isCase = issue.kind === "problem";

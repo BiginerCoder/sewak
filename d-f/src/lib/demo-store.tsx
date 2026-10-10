@@ -18,6 +18,7 @@ export type ActionResult = { ok: true; id?: number } | { ok: false; error: strin
 
 type DemoContextValue = {
   data: DemoData;
+  isReady: boolean;
   storageError: string;
   clearSavedData: () => void;
   createIssue: (input: {
@@ -60,6 +61,7 @@ function nextId(items: { id: number }[]) {
 
 export function DemoProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState<DemoData>(INITIAL_DEMO_DATA);
+  const [isReady, setIsReady] = useState(false);
   const [storageError, setStorageError] = useState("");
 
   useEffect(() => {
@@ -69,6 +71,7 @@ export function DemoProvider({ children }: { children: ReactNode }) {
         if (!stored) {
           setData(INITIAL_DEMO_DATA);
           setStorageError("");
+          setIsReady(true);
           return;
         }
         const parsed = restoreDates(JSON.parse(stored));
@@ -77,6 +80,8 @@ export function DemoProvider({ children }: { children: ReactNode }) {
         setStorageError("");
       } catch (error) {
         setStorageError(error instanceof Error ? error.message : "Saved demo data could not be read.");
+      } finally {
+        setIsReady(true);
       }
     };
     load();
@@ -102,12 +107,14 @@ export function DemoProvider({ children }: { children: ReactNode }) {
 
   const actions: DemoContextValue = {
     data,
+    isReady,
     storageError,
     clearSavedData() {
       try {
         localStorage.removeItem(STORAGE_KEY);
         setData(INITIAL_DEMO_DATA);
         setStorageError("");
+        setIsReady(true);
       } catch {
         setStorageError("Saved demo data could not be cleared from this browser.");
       }
@@ -278,7 +285,7 @@ export function DemoProvider({ children }: { children: ReactNode }) {
   return (
     <DemoContext.Provider value={actions}>
       <div className="callout info" role="note" style={{ margin: 12 }}>
-        <span>Demo mode: changes are saved only in this browser and are not sent to a service.</span>
+        <span>{isReady ? "Demo mode: changes are saved only in this browser and are not sent to a service." : "Loading this browser's saved demo…"}</span>
         <button
           type="button"
           className="btn btn-secondary btn-sm"

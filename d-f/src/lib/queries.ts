@@ -98,7 +98,7 @@ function makeInitialDemoData(): DemoData {
         note: stage === 1 ? "Problem posted in the Ward 24 demo." : null,
         actor: stage === 1 ? issue.author : stage === 2 || stage === 7 ? "Community" : "Resident-reported",
         source: stage === 2 || stage === 7 ? "community" : stage >= 4 ? "authority-reported" : "resident",
-        createdAt: new Date(issue.createdAt.getTime() - (issue.stage - stage) * 86_400_000),
+        createdAt: new Date(issue.createdAt.getTime() + (issue.stage - stage) * 86_400_000),
       });
     }
   }
