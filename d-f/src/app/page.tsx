@@ -1,15 +1,20 @@
+"use client";
+
 import { Metric, IssueCard, PageHead, PriorityIssues, SourceLabel, WardSnapshot } from "@/components/ui";
 import { FEED_FILTERS, matchFeedFilter, isUnresolved, timeAgo } from "@/lib/constants";
 import { getIssues, getRecentUpdates, getStats } from "@/lib/queries";
 import { AlertCircle, CheckCircle2, FileText, Landmark, Newspaper, Plus, Search, Users } from "lucide-react";
 import Link from "next/link";
+import { useDemoData } from "@/lib/demo-store";
+import { useBrowserSearchParams } from "@/lib/use-browser-search";
 
-export const dynamic = "force-dynamic";
-
-export default async function HomePage({ searchParams }: { searchParams: Promise<{ filter?: string }> }) {
-  const { filter: f } = await searchParams;
+export default function HomePage() {
+  const { data } = useDemoData();
+  const f = useBrowserSearchParams().get("filter");
   const filter = FEED_FILTERS.some((x) => x.id === f) ? (f as string) : "all";
-  const [issues, stats, updates] = await Promise.all([getIssues(), getStats(), getRecentUpdates(4)]);
+  const issues = getIssues(data);
+  const stats = getStats(data);
+  const updates = getRecentUpdates(data, 4);
 
   const feed = issues.filter((i) => matchFeedFilter(i, filter));
   const priority = issues.filter(isUnresolved).sort((a, b) => b.affectedCount - a.affectedCount).slice(0, 3);

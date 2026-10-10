@@ -1,13 +1,14 @@
+"use client";
+
 import { IssueCard, PageHead, StatusBadge } from "@/components/ui";
 import { getContributions } from "@/lib/queries";
 import { Plus } from "lucide-react";
 import Link from "next/link";
+import { useDemoData } from "@/lib/demo-store";
 
-export const dynamic = "force-dynamic";
-export const metadata = { title: "My contributions" };
-
-export default async function ContributionsPage() {
-  const c = await getContributions();
+export default function ContributionsPage() {
+  const { data } = useDemoData();
+  const c = getContributions(data);
   return (
     <>
       <PageHead

@@ -70,7 +70,7 @@ export function AskAssistant({ cases }: { cases: LiteCase[] }) {
               aria-describedby="ask-hint"
             />
             <span id="ask-hint" className="hint">
-              We check for similar community cases here. When you request government service links below, this description is sent to Govlinks.
+              We check for similar sample cases and suggest curated government service links locally in your browser.
             </span>
             {error && <div className="error" role="alert">{error}</div>}
           </div>

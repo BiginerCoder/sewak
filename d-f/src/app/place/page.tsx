@@ -1,14 +1,16 @@
+"use client";
+
 import { Metric, PageHead, SourceLabel } from "@/components/ui";
 import { CATEGORIES, isResolved, isUnresolved } from "@/lib/constants";
 import { getIssues, getStats } from "@/lib/queries";
 import { AlertCircle, CheckCircle2, ExternalLink, FileText, MapPin, Users } from "lucide-react";
 import Link from "next/link";
+import { useDemoData } from "@/lib/demo-store";
 
-export const dynamic = "force-dynamic";
-export const metadata = { title: "Ward information" };
-
-export default async function PlacePage() {
-  const [issues, stats] = await Promise.all([getIssues(), getStats()]);
+export default function PlacePage() {
+  const { data } = useDemoData();
+  const issues = getIssues(data);
+  const stats = getStats(data);
   const problems = issues.filter((i) => i.kind === "problem");
 
   const byCat = CATEGORIES.map((c) => {

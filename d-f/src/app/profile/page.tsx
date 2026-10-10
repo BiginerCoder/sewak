@@ -1,14 +1,15 @@
+"use client";
+
 import { Metric, PageHead } from "@/components/ui";
 import { CURRENT_RESIDENT, WARD } from "@/lib/constants";
 import { getContributions } from "@/lib/queries";
 import { Award, CheckCircle2, FileText, Lock, MessageSquare, Search, ThumbsUp, Users } from "lucide-react";
 import Link from "next/link";
+import { useDemoData } from "@/lib/demo-store";
 
-export const dynamic = "force-dynamic";
-export const metadata = { title: "Profile" };
-
-export default async function ProfilePage() {
-  const c = await getContributions();
+export default function ProfilePage() {
+  const { data } = useDemoData();
+  const c = getContributions(data);
   const resolvedByMe = c.reported.filter((i) => i.kind === "problem" && i.stage === 7).length;
   const verifs = c.verified.filter((v) => v.verdict === "fixed").length;
 

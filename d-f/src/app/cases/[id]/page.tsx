@@ -1,3 +1,5 @@
+"use client";
+
 import { AuthorityForm, CommentForm, ConfirmAffected, EvidenceForm, VerifyPanel } from "@/components/CaseActions";
 import { Avatar, Lifecycle, SourceLabel, StatusBadge } from "@/components/ui";
 import {
@@ -7,14 +9,15 @@ import { getIssueDetail } from "@/lib/queries";
 import { Camera, ClipboardEdit, ExternalLink, Info, MapPin } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { useParams } from "next/navigation";
+import { useDemoData } from "@/lib/demo-store";
 
-export const dynamic = "force-dynamic";
-
-export default async function CaseDetail({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+export default function CaseDetail() {
+  const { data } = useDemoData();
+  const { id } = useParams<{ id: string }>();
   const n = Number(id);
   if (!Number.isInteger(n)) notFound();
-  const d = await getIssueDetail(n);
+  const d = getIssueDetail(data, n);
   if (!d) notFound();
   const { issue } = d;
   const cat = categoryOf(issue.category);
@@ -112,7 +115,7 @@ export default async function CaseDetail({ params }: { params: Promise<{ id: str
                     <figure className="ev-item" key={e.id}>
                       {e.hasImage ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={`/api/evidence/${e.id}`} alt={e.caption} loading="lazy" />
+                        <img src={e.imageUrl ?? undefined} alt={e.caption} loading="lazy" />
                       ) : (
                         <div className="ev-empty">No photo provided</div>
                       )}

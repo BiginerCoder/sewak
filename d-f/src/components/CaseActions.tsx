@@ -1,7 +1,7 @@
 "use client";
 
-import { addComment, addEvidence, confirmAffected, logAuthorityUpdate, submitVerification, type ActionResult } from "@/app/actions";
 import { STAGES } from "@/lib/constants";
+import { useDemoData, type ActionResult } from "@/lib/demo-store";
 import { Check, ThumbsDown, ThumbsUp, Users } from "lucide-react";
 import { useState, useTransition } from "react";
 import { PhotoPicker } from "./PhotoPicker";
@@ -28,6 +28,7 @@ function useRun() {
 }
 
 export function ConfirmAffected({ issueId, confirmed, count }: { issueId: number; confirmed: boolean; count: number }) {
+  const { confirmAffected } = useDemoData();
   const { pending, run, status } = useRun();
   return (
     <div className="confirm-bar">
@@ -44,7 +45,7 @@ export function ConfirmAffected({ issueId, confirmed, count }: { issueId: number
         <button
           className={`btn ${confirmed ? "btn-secondary" : "btn-primary"}`}
           disabled={confirmed || pending}
-          onClick={() => run(() => confirmAffected(issueId), "Thank you. Your confirmation was added.")}
+          onClick={() => run(() => Promise.resolve(confirmAffected(issueId)), "Thank you. Your confirmation was added.")}
         >
           {confirmed ? <Check size={16} aria-hidden /> : <Users size={16} aria-hidden />}
           {confirmed ? "You confirmed this" : pending ? "Saving…" : "I'm affected too"}
@@ -56,6 +57,7 @@ export function ConfirmAffected({ issueId, confirmed, count }: { issueId: number
 }
 
 export function CommentForm({ issueId }: { issueId: number }) {
+  const { addComment } = useDemoData();
   const [body, setBody] = useState("");
   const { pending, run, status } = useRun();
   return (
@@ -63,7 +65,7 @@ export function CommentForm({ issueId }: { issueId: number }) {
       className="stack"
       onSubmit={(e) => {
         e.preventDefault();
-        run(() => addComment(issueId, body), "Comment posted.", () => setBody(""));
+        run(() => Promise.resolve(addComment(issueId, body)), "Comment posted.", () => setBody(""));
       }}
     >
       <div className="field">
@@ -89,6 +91,7 @@ export function CommentForm({ issueId }: { issueId: number }) {
 }
 
 export function EvidenceForm({ issueId, defaultPhase = "during" }: { issueId: number; defaultPhase?: string }) {
+  const { addEvidence } = useDemoData();
   const [phase, setPhase] = useState(defaultPhase);
   const [caption, setCaption] = useState("");
   const [photo, setPhoto] = useState<string | null>(null);
@@ -98,7 +101,7 @@ export function EvidenceForm({ issueId, defaultPhase = "during" }: { issueId: nu
       className="stack"
       onSubmit={(e) => {
         e.preventDefault();
-        run(() => addEvidence({ issueId, phase, caption, photo }), "Evidence added.", () => {
+        run(() => Promise.resolve(addEvidence({ issueId, phase, caption, photo })), "Evidence added.", () => {
           setCaption("");
           setPhoto(null);
         });
@@ -126,6 +129,7 @@ export function EvidenceForm({ issueId, defaultPhase = "during" }: { issueId: nu
 }
 
 export function AuthorityForm({ issueId, stage }: { issueId: number; stage: number }) {
+  const { logAuthorityUpdate } = useDemoData();
   const options = STAGES.filter((s) => s.n >= 3 && s.n <= 6 && s.n > stage);
   const [next, setNext] = useState(options[0]?.n ?? 0);
   const [ref, setRef] = useState("");
@@ -137,7 +141,7 @@ export function AuthorityForm({ issueId, stage }: { issueId: number; stage: numb
       className="stack"
       onSubmit={(e) => {
         e.preventDefault();
-        run(() => logAuthorityUpdate({ issueId, stage: next, ref, note }), "Update recorded and labelled as resident-reported.", () => {
+        run(() => Promise.resolve(logAuthorityUpdate({ issueId, stage: next, ref, note })), "Update recorded and labelled as resident-reported.", () => {
           setRef("");
           setNote("");
         });
@@ -171,6 +175,7 @@ export function AuthorityForm({ issueId, stage }: { issueId: number; stage: numb
 }
 
 export function VerifyPanel({ issueId, myVerdict }: { issueId: number; myVerdict: string | null }) {
+  const { submitVerification } = useDemoData();
   const { pending, run, status } = useRun();
   const [note, setNote] = useState("");
   return (
@@ -184,7 +189,7 @@ export function VerifyPanel({ issueId, myVerdict }: { issueId: number; myVerdict
           className="btn btn-primary btn-sm"
           disabled={pending}
           aria-pressed={myVerdict === "fixed"}
-          onClick={() => run(() => submitVerification({ issueId, verdict: "fixed", note }), "Your confirmation was recorded.")}
+          onClick={() => run(() => Promise.resolve(submitVerification({ issueId, verdict: "fixed", note })), "Your confirmation was recorded.")}
         >
           <ThumbsUp size={15} aria-hidden /> It&apos;s fixed
         </button>
@@ -192,7 +197,7 @@ export function VerifyPanel({ issueId, myVerdict }: { issueId: number; myVerdict
           className="btn btn-secondary btn-sm"
           disabled={pending}
           aria-pressed={myVerdict === "not_fixed"}
-          onClick={() => run(() => submitVerification({ issueId, verdict: "not_fixed", note }), "Your report was recorded.")}
+          onClick={() => run(() => Promise.resolve(submitVerification({ issueId, verdict: "not_fixed", note })), "Your report was recorded.")}
         >
           <ThumbsDown size={15} aria-hidden /> Not fixed
         </button>
