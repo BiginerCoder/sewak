@@ -1,18 +1,22 @@
+"use client";
+
 import { MiniProgress, PageHead, StatusBadge } from "@/components/ui";
 import { CASE_FILTERS, STAGES, categoryOf, matchCaseFilter, timeAgo } from "@/lib/constants";
 import { getIssues } from "@/lib/queries";
 import { ArrowRight, Plus, Search } from "lucide-react";
 import Link from "next/link";
+import { useDemoData } from "@/lib/demo-store";
+import { useBrowserSearchParams } from "@/lib/use-browser-search";
 
-export const dynamic = "force-dynamic";
-export const metadata = { title: "Cases" };
-
-export default async function CasesPage({ searchParams }: { searchParams: Promise<{ status?: string; q?: string }> }) {
-  const { status: s, q: rawQ } = await searchParams;
+export default function CasesPage() {
+  const { data } = useDemoData();
+  const params = useBrowserSearchParams();
+  const s = params.get("status");
+  const rawQ = params.get("q");
   const status = CASE_FILTERS.some((x) => x.id === s) ? (s as string) : "all";
   const q = (rawQ ?? "").trim().toLowerCase();
 
-  const all = (await getIssues()).filter((i) => i.kind === "problem");
+  const all = getIssues(data).filter((i) => i.kind === "problem");
   const matchesQ = (i: (typeof all)[number]) =>
     !q ||
     [i.title, i.description, i.department ?? "", i.locationText, categoryOf(i.category).label, String(12300 + i.id), `#${12300 + i.id}`]

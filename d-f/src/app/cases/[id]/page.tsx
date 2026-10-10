@@ -1,3 +1,5 @@
+"use client";
+
 import { AuthorityForm, CommentForm, ConfirmAffected, EvidenceForm, VerifyPanel } from "@/components/CaseActions";
 import { Avatar, Lifecycle, SourceLabel, StatusBadge } from "@/components/ui";
 import {
@@ -7,15 +9,19 @@ import { getIssueDetail } from "@/lib/queries";
 import { Camera, ClipboardEdit, ExternalLink, Info, MapPin } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { useParams } from "next/navigation";
+import { useDemoData } from "@/lib/demo-store";
 
-export const dynamic = "force-dynamic";
-
-export default async function CaseDetail({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+export default function CaseDetail() {
+  const { data, isReady } = useDemoData();
+  const { id } = useParams<{ id: string }>();
   const n = Number(id);
   if (!Number.isInteger(n)) notFound();
-  const d = await getIssueDetail(n);
-  if (!d) notFound();
+  const d = getIssueDetail(data, n);
+  if (!d) {
+    if (!isReady) return <div className="card empty" role="status">Loading saved demo case…</div>;
+    notFound();
+  }
   const { issue } = d;
   const cat = categoryOf(issue.category);
   const isCase = issue.kind === "problem";
@@ -112,7 +118,7 @@ export default async function CaseDetail({ params }: { params: Promise<{ id: str
                     <figure className="ev-item" key={e.id}>
                       {e.hasImage ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={`/api/evidence/${e.id}`} alt={e.caption} loading="lazy" />
+                        <img src={e.imageUrl ?? undefined} alt={e.caption} loading="lazy" />
                       ) : (
                         <div className="ev-empty">No photo provided</div>
                       )}

@@ -38,9 +38,9 @@ export function IssueCard({ issue }: { issue: IssueRow }) {
         </h3>
         <p className="issue-desc">{issue.description}</p>
       </div>
-      {issue.thumbId && (
+      {issue.thumbUrl && (
         // eslint-disable-next-line @next/next/no-img-element
-        <img className="issue-thumb" src={`/api/evidence/${issue.thumbId}`} alt={`Evidence photo for ${issue.title}`} loading="lazy" />
+        <img className="issue-thumb" src={issue.thumbUrl} alt={`Evidence photo for ${issue.title}`} loading="lazy" />
       )}
       <div className="issue-meta">
         <span>

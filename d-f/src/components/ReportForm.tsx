@@ -1,7 +1,7 @@
 "use client";
 
-import { createIssue } from "@/app/actions";
 import { CATEGORIES } from "@/lib/constants";
+import { useDemoData } from "@/lib/demo-store";
 import { MapPin } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
@@ -10,6 +10,7 @@ import { PhotoPicker } from "./PhotoPicker";
 const DEMO_LOCATION = "Near Shastri Nagar Circle, Ward 24";
 
 export function ReportForm({ initialCategory, initialDescription }: { initialCategory?: string; initialDescription?: string }) {
+  const { createIssue } = useDemoData();
   const router = useRouter();
   const [kind, setKind] = useState<"problem" | "information">("problem");
   const [title, setTitle] = useState("");
@@ -43,7 +44,7 @@ export function ReportForm({ initialCategory, initialDescription }: { initialCat
       return;
     }
     start(async () => {
-      const r = await createIssue({ kind, title, category, description, location, simulated, photo });
+      const r = createIssue({ kind, title, category, description, location, simulated, photo });
       if (r.ok) router.push(`/cases/${r.id}`);
       else {
         setErrors(r.fields ?? {});

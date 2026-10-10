@@ -4,8 +4,7 @@ import "@fontsource-variable/manrope";
 import "@fontsource-variable/inter";
 import "./globals.css";
 import { Header, MobileNav, Sidebar } from "@/components/shell";
-
-export const dynamic = "force-dynamic";
+import { DemoProvider } from "@/lib/demo-store";
 
 export const metadata: Metadata = {
   title: { default: "Civic Network · Ward 24", template: "%s · Civic Network" },
@@ -31,19 +30,21 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <script dangerouslySetInnerHTML={{ __html: themeInit }} />
       </head>
       <body>
-        <a href="#main" className="skip-link">
-          Skip to main content
-        </a>
-        <div className="app">
-          <Sidebar />
-          <div className="main-col">
-            <Header />
-            <main id="main" className="workspace">
-              {children}
-            </main>
+        <DemoProvider>
+          <a href="#main" className="skip-link">
+            Skip to main content
+          </a>
+          <div className="app">
+            <Sidebar />
+            <div className="main-col">
+              <Header />
+              <main id="main" className="workspace">
+                {children}
+              </main>
+            </div>
           </div>
-        </div>
-        <MobileNav />
+          <MobileNav />
+        </DemoProvider>
       </body>
     </html>
   );
