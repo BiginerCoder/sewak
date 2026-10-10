@@ -125,14 +125,60 @@ export const CATEGORIES: Category[] = [
 
 export const categoryOf = (id: string) => CATEGORIES.find((c) => c.id === id) ?? CATEGORIES[CATEGORIES.length - 1];
 
+const NORMALIZED_SPACE = /\s+/g;
+const NON_WORD = /[^a-z0-9\s]/g;
+
+const CATEGORY_SYNONYMS: Record<string, string[]> = {
+  roads: ["pothole", "broken road", "road damage", "crack in road", "asphalt", "speed breaker", "footpath damaged", "bumpy road", "uneven road", "road crater"],
+  streetlights: ["dark street", "no light", "lights out", "street lamp", "lamp post", "bulb missing", "dark lane", "night darkness"],
+  sanitation: ["garbage pile", "overflowing bin", "trash dumping", "littering", "stink", "smell", "dirty street", "dustbin full", "solid waste", "waste not collected"],
+  drainage: ["blocked drain", "waterlogging", "stagnant water", "sewer overflow", "flooded street", "clogged drain", "sewage overflow", "drain choked"],
+  water: ["no water", "low pressure", "water shortage", "supply issue", "pipeline leak", "pipe burst", "tap problem", "contaminated water", "water not coming"],
+  electricity: ["power cut", "no electricity", "transformer issue", "sparking wire", "voltage problem", "outage", "fuse blown", "electric line damage"],
+  parks: ["park broken", "playground damaged", "bench broken", "park encroachment", "garden neglected", "public space issue"],
+};
+
+const normalizeTerm = (value: string) => value.toLowerCase().replace(NON_WORD, " ").replace(NORMALIZED_SPACE, " ").trim();
+
+function getObjectiveScore(text: string, categoryId: string) {
+  const normalized = normalizeTerm(text);
+  const category = categoryOf(categoryId);
+  const terms = [...category.keywords, ...(CATEGORY_SYNONYMS[categoryId] ?? [])].map(normalizeTerm).filter(Boolean);
+  const matched = [...new Set(terms.filter((term) => normalized.includes(term)))];
+  const score = matched.length * 2 + (normalized.includes(category.label.toLowerCase().replace(NON_WORD, " ").replace(NORMALIZED_SPACE, " ")) ? 2 : 0);
+  return { matched, score };
+}
+
 export function classify(text: string): { id: string; matched: string[] } {
-  const t = text.toLowerCase();
-  let best = { id: "other", matched: [] as string[] };
+  const sanitized = normalizeTerm(text);
+  if (!sanitized) return { id: "other", matched: [] };
+
+  let best = { id: "other", matched: [] as string[], score: 0 };
   for (const c of CATEGORIES) {
-    const matched = c.keywords.filter((k) => t.includes(k));
-    if (matched.length > best.matched.length) best = { id: c.id, matched };
+    const { matched, score } = getObjectiveScore(sanitized, c.id);
+    if (score > best.score || (score === best.score && c.id !== "other" && best.id === "other")) {
+      best = { id: c.id, matched, score };
+    }
   }
-  return best;
+
+  if (best.id === "other") {
+    const fallback = [
+      { id: "water", keywords: ["water", "tap", "pipe"] },
+      { id: "sanitation", keywords: ["garbage", "trash", "waste", "dump"] },
+      { id: "roads", keywords: ["road", "pothole", "street", "lane"] },
+      { id: "streetlights", keywords: ["light", "dark", "lamp", "bulb"] },
+      { id: "drainage", keywords: ["drain", "sewer", "flood", "overflow"] },
+      { id: "electricity", keywords: ["electric", "power", "transformer", "wire"] },
+    ];
+    for (const entry of fallback) {
+      const matched = entry.keywords.filter((keyword) => sanitized.includes(keyword));
+      if (matched.length > best.matched.length) {
+        best = { id: entry.id, matched, score: matched.length };
+      }
+    }
+  }
+
+  return { id: best.id, matched: best.matched };
 }
 
 export function buildDraft(categoryId: string, text: string, resident = CURRENT_RESIDENT) {

@@ -13,7 +13,7 @@ export default async function AskPage() {
   return (
     <>
       <PageHead title="Ask for help" eyebrow="Guided assistance">
-        Describe a problem in your own words. We will check existing community cases, find government service pages for your ward, and help you prepare a complaint.
+        Describe a problem in your own words, chat with the Sewak assistant, check related community cases, and find government service pages for your ward.
       </PageHead>
       <AskAssistant cases={cases} />
     </>

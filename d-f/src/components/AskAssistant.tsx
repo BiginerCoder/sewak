@@ -1,7 +1,9 @@
 "use client";
 
-import { CATEGORIES, buildDraft, categoryOf, classify, stageOf } from "@/lib/constants";
+import { CATEGORIES, buildDraft, categoryOf, stageOf } from "@/lib/constants";
+import { getQueryIntent, rankSimilarCases } from "@/lib/assistant";
 import { GovlinksPanel } from "@/components/GovlinksPanel";
+import { SewakChat } from "@/components/SewakChat";
 import { AlertTriangle, ClipboardCopy, ExternalLink, Search, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
@@ -19,13 +21,13 @@ const EXAMPLES = [
 export function AskAssistant({ cases }: { cases: LiteCase[] }) {
   const [text, setText] = useState("");
   const [error, setError] = useState("");
-  const [result, setResult] = useState<{ category: string; matched: string[]; text: string } | null>(null);
+  const [result, setResult] = useState<{ category: string; matched: string[]; text: string; objective: string } | null>(null);
   const [copied, setCopied] = useState<"" | "ok" | "fail">("");
   const resultRef = useRef<HTMLDivElement>(null);
 
   const cat = result ? categoryOf(result.category) : null;
   const similar = useMemo(
-    () => (result ? cases.filter((c) => c.category === result.category && c.stage < 7).sort((a, b) => b.affectedCount - a.affectedCount) : []),
+    () => (result ? rankSimilarCases(result.text, cases.filter((c) => c.category === result.category && c.stage < 7)) : []),
     [cases, result],
   );
   const draft = result ? buildDraft(result.category, result.text) : "";
@@ -38,8 +40,8 @@ export function AskAssistant({ cases }: { cases: LiteCase[] }) {
       return;
     }
     setError("");
-    const c = classify(text);
-    setResult({ category: c.id, matched: c.matched, text });
+    const c = getQueryIntent(text);
+    setResult({ category: c.category, matched: c.matched, text, objective: c.objective });
     setTimeout(() => resultRef.current?.focus(), 50);
   }
 
@@ -102,6 +104,9 @@ export function AskAssistant({ cases }: { cases: LiteCase[] }) {
                 Detected category: {cat.label}
               </h2>
               <p className="small muted" style={{ margin: "6px 0 0" }}>
+                <span style={{ display: "block", marginBottom: 4 }}>
+                  Matched objective: <b>{result.objective}</b>
+                </span>
                 {result.matched.length
                   ? `Matched on: ${result.matched.map((m) => `“${m}”`).join(", ")}.`
                   : "No category keywords found, so this is marked as other. Choose the closest match below."}
@@ -112,7 +117,7 @@ export function AskAssistant({ cases }: { cases: LiteCase[] }) {
               <div className="label small" style={{ marginBottom: 8 }} id="cat-fix">Not right? Choose a different category</div>
               <div className="chips" role="group" aria-labelledby="cat-fix">
                 {CATEGORIES.map((c) => (
-                  <button key={c.id} type="button" className="chip" aria-pressed={c.id === result.category} onClick={() => setResult({ ...result, category: c.id })}>
+                  <button key={c.id} type="button" className="chip" aria-pressed={c.id === result.category} onClick={() => setResult({ ...result, category: c.id, objective: categoryOf(c.id).label })}>
                     {c.label}
                   </button>
                 ))}
@@ -167,6 +172,7 @@ export function AskAssistant({ cases }: { cases: LiteCase[] }) {
       </div>
 
       <aside className="contextual-panel" aria-label="Supporting information" aria-live="polite">
+        <SewakChat />
         {!result || !cat ? (
           <section className="card widget">
             <h3>
@@ -180,7 +186,7 @@ export function AskAssistant({ cases }: { cases: LiteCase[] }) {
             </ol>
             <hr className="divider" />
             <p className="small muted" style={{ margin: 0 }}>
-              Classification is simple keyword matching, not AI. Always check the result.
+              Category matching groups similar civic objectives. Chat uses Sewak case context and an optional configured language model. Always verify guidance with official sources.
             </p>
           </section>
         ) : (

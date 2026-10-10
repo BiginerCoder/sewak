@@ -11,6 +11,24 @@ recommendation API.
 The frontend calls Govlinks through a same-origin Next.js API proxy. The browser
 does not need direct access to the Govlinks service.
 
+## Sewak assistant chat
+
+The Ask for help page includes a chat window grounded in current Sewak case
+data, the selected civic objective, and category-specific official resources.
+Related cases are ranked by objective, text overlap, location and current case
+status. The assistant API retrieves this context on the server; conversation
+history is held only in the browser and is not persisted.
+
+To enable generated answers, set `OPENAI_API_KEY` and `OPENAI_MODEL` in
+`d-f/.env` (or deployment environment). An OpenAI-compatible provider may be
+configured with `OPENAI_BASE_URL`, which must use HTTPS. Without a provider key,
+the chat remains usable in local matching mode and labels that mode explicitly.
+Queries and relevant case context are sent to the configured provider when
+enabled. The model is instructed to use supplied Sewak context only; this
+implementation does not browse the web. Verify guidance against the linked
+official sources. Do not expose the demo app publicly without authentication,
+privacy review and rate limiting.
+
 > **Production status:** This repository is not ready to serve real users.
 > Govlinks has no authentication and accepts client-supplied user IDs; the
 > frontend uses demo resident data. Do not expose either app publicly with demo
