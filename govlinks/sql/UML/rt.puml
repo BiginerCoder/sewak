@@ -1,0 +1,388 @@
+@startuml
+skinparam classAttributeIconSize 0
+hide circle
+skinparam linetype ortho
+
+class countries {
+  +country_id: bigint
+  +country_code: text
+  +country_name: text
+}
+
+class states {
+  +state_id: bigint
+  +country_id: bigint
+  +state_code: text
+  +state_name: text
+}
+
+class districts {
+  +district_id: bigint
+  +state_id: bigint
+  +district_code: text
+  +district_name: text
+}
+
+class local_bodies {
+  +local_body_id: bigint
+  +district_id: bigint
+  +body_type: text
+  +body_name: text
+}
+
+class wards {
+  +ward_id: bigint
+  +local_body_id: bigint
+  +ward_number: text
+  +ward_name: text
+}
+
+class departments {
+  +department_id: bigint
+  +department_name: text
+  +department_level: text
+}
+
+class positions {
+  +position_id: bigint
+  +department_id: bigint
+  +position_name: text
+  +responsibilities: text
+}
+
+class officials {
+  +official_id: bigint
+  +employee_code: text
+  +name: text
+  +phone: text
+  +email: text
+}
+
+class official_assignments {
+  +assignment_id: bigint
+  +official_id: bigint
+  +position_id: bigint
+  +state_id: bigint
+  +district_id: bigint
+  +local_body_id: bigint
+  +ward_id: bigint
+  +start_date: date
+  +end_date: date
+  +is_current: boolean
+}
+
+class problem_categories {
+  +category_id: bigint
+  +parent_category_id: bigint
+  +category_name: text
+  +department_id: bigint
+  +is_fallback: boolean
+}
+
+class keywords {
+  +keyword_id: bigint
+  +keyword: text
+  +normalized_keyword: text
+  +language: text
+}
+
+class category_keywords {
+  +category_id: bigint
+  +keyword_id: bigint
+  +weight: numeric
+}
+
+class users {
+  +user_id: bigint
+  +email: text
+  +phone: text
+  +password_hash: text
+  +role: text
+  +is_suspended: boolean
+  +created_at: timestamptz
+}
+
+class user_queries {
+  +query_id: bigint
+  +user_id: bigint
+  +query_text: text
+  +detected_category_id: bigint
+  +state_id: bigint
+  +district_id: bigint
+  +local_body_id: bigint
+  +ward_id: bigint
+  +created_at: timestamptz
+}
+
+class query_keywords {
+  +query_id: bigint
+  +keyword_id: bigint
+  +confidence_score: numeric
+}
+
+class websites {
+  +website_id: bigint
+  +website_name: text
+  +domain: text
+  +base_url: text
+  +organization_name: text
+  +website_type: text
+  +official_status: boolean
+  +last_verified_at: timestamptz
+  +verification_source: text
+  +status: boolean
+  +is_demo: boolean
+}
+
+class website_locations {
+  +website_location_id: bigint
+  +website_id: bigint
+  +country_id: bigint
+  +state_id: bigint
+  +district_id: bigint
+  +local_body_id: bigint
+  +ward_id: bigint
+  +priority: int
+  +is_active: boolean
+}
+
+class website_categories {
+  +website_id: bigint
+  +category_id: bigint
+  +relevance: numeric
+  +priority: int
+}
+
+class website_links {
+  +link_id: bigint
+  +website_id: bigint
+  +category_id: bigint
+  +parent_link_id: bigint
+  +title: text
+  +url: text
+  +action: text
+  +link_type: text
+  +description: text
+  +steps: text
+  +login_required: boolean
+  +language: text
+  +source: text
+  +trust_label: text
+  +state: text
+  +state_changed_at: timestamptz
+  +status: boolean
+  +last_verified_at: timestamptz
+  +last_checked_at: timestamptz
+  +last_status_code: int
+  +content_hash: text
+  +created_at: timestamptz
+}
+
+class link_keywords {
+  +link_id: bigint
+  +keyword_id: bigint
+  +relevance: numeric
+}
+
+class website_sessions {
+  +session_id: bigint
+  +user_id: bigint
+  +query_id: bigint
+  +website_id: bigint
+  +started_at: timestamptz
+  +ended_at: timestamptz
+  +duration_seconds: int
+  +exit_reason: text
+}
+
+class link_visits {
+  +visit_id: bigint
+  +session_id: bigint
+  +link_id: bigint
+  +opened_at: timestamptz
+  +closed_at: timestamptz
+  +duration_seconds: int
+  +previous_link_id: bigint
+  +next_link_id: bigint
+  +via: text
+  +completed_action: boolean
+  +success_signal: text
+}
+
+class website_votes {
+  +vote_id: bigint
+  +user_id: bigint
+  +website_id: bigint
+  +link_id: bigint
+  +query_id: bigint
+  +vote: smallint
+  +created_at: timestamptz
+}
+
+class link_feedback {
+  +feedback_id: bigint
+  +user_id: bigint
+  +query_id: bigint
+  +link_id: bigint
+  +useful: boolean
+  +problem_solved: boolean
+  +rating: smallint
+  +outcome: text
+  +proof_type: text
+  +proof_ref: text
+  +comment: text
+  +created_at: timestamptz
+}
+
+class link_flags {
+  +flag_id: bigint
+  +link_id: bigint
+  +user_id: bigint
+  +reason: text
+  +status: text
+  +created_at: timestamptz
+}
+
+class allowed_domains {
+  +pattern: text
+  +kind: text
+}
+
+class link_health_checks {
+  +check_id: bigint
+  +link_id: bigint
+  +checked_at: timestamptz
+  +ok: boolean
+  +status_code: int
+  +final_url: text
+  +redirected: boolean
+  +page_title: text
+  +content_hash: text
+  +content_changed: boolean
+  +error: text
+  +elapsed_ms: int
+  +inconclusive: boolean
+}
+
+class link_state_history {
+  +history_id: bigint
+  +link_id: bigint
+  +old_state: text
+  +new_state: text
+  +reason: text
+  +changed_at: timestamptz
+}
+
+class ranking_config {
+  +key: text
+  +value: numeric
+  +note: text
+}
+
+class website_ranking {
+  +ranking_id: bigint
+  +link_id: bigint
+  +district_id: bigint
+  +fb_pos: numeric
+  +fb_n: numeric
+  +use_pos: numeric
+  +use_n: numeric
+  +unique_success_users: int
+  +last_success_at: timestamptz
+  +computed_at: timestamptz
+}
+
+class recommendation_logs {
+  +recommendation_id: bigint
+  +query_id: bigint
+  +link_id: bigint
+  +score: numeric
+  +rank: int
+  +components: jsonb
+  +displayed_at: timestamptz
+  +selected_at: timestamptz
+}
+
+class audit_logs {
+  +audit_id: bigint
+  +user_id: bigint
+  +action: text
+  +entity_type: text
+  +entity_id: bigint
+  +old_value: jsonb
+  +new_value: jsonb
+  +created_at: timestamptz
+  +ip_address: inet
+  +user_agent: text
+}
+
+countries ||--o{ states
+states ||--o{ districts
+districts ||--o{ local_bodies
+local_bodies ||--o{ wards
+
+countries ||--o{ website_locations
+states ||--o{ website_locations
+districts ||--o{ website_locations
+local_bodies ||--o{ website_locations
+wards ||--o{ website_locations
+
+websites ||--o{ website_locations
+websites ||--o{ website_links
+problem_categories ||--o{ website_links
+website_links ||--o{ website_links : parent
+website_links ||--o{ link_keywords
+keywords ||--o{ link_keywords
+websites ||--o{ website_categories
+problem_categories ||--o{ website_categories
+problem_categories ||--o{ problem_categories : parent
+problem_categories ||--o{ category_keywords
+keywords ||--o{ category_keywords
+
+countries ||--o{ officials
+states ||--o{ official_assignments
+districts ||--o{ official_assignments
+local_bodies ||--o{ official_assignments
+wards ||--o{ official_assignments
+positions ||--o{ official_assignments
+officials ||--o{ official_assignments
+departments ||--o{ positions
+
+departments ||--o{ problem_categories
+
+users ||--o{ user_queries
+problem_categories ||--o{ user_queries
+states ||--o{ user_queries
+districts ||--o{ user_queries
+local_bodies ||--o{ user_queries
+wards ||--o{ user_queries
+user_queries ||--o{ query_keywords
+keywords ||--o{ query_keywords
+
+users ||--o{ website_sessions
+user_queries ||--o{ website_sessions
+websites ||--o{ website_sessions
+website_sessions ||--o{ link_visits
+website_links ||--o{ link_visits
+website_links ||--o{ link_visits : previous / next
+
+users ||--o{ website_votes
+websites ||--o{ website_votes
+website_links ||--o{ website_votes
+user_queries ||--o{ website_votes
+
+users ||--o{ link_feedback
+user_queries ||--o{ link_feedback
+website_links ||--o{ link_feedback
+website_links ||--o{ link_flags
+users ||--o{ link_flags
+website_links ||--o{ link_health_checks
+website_links ||--o{ link_state_history
+website_links ||--o{ website_ranking
+districts ||--o{ website_ranking
+
+user_queries ||--o{ recommendation_logs
+website_links ||--o{ recommendation_logs
+users ||--o{ audit_logs
+
+@enduml

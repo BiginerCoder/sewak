@@ -12,19 +12,27 @@ export function subscribeDefaultLocation(listener: () => void) {
   };
 }
 
-export function readDefaultLocation(): CivicLocationId {
+export function readDefaultLocation(): string {
   try {
-    const saved = window.localStorage.getItem(STORAGE_KEY);
-    return CIVIC_LOCATIONS.find((location) => location.id === saved)?.id ?? DEFAULT_LOCATION_ID;
+    const saved = typeof window !== "undefined" ? window.localStorage.getItem(STORAGE_KEY) : null;
+    return saved || DEFAULT_LOCATION_ID;
   } catch {
     return DEFAULT_LOCATION_ID;
   }
 }
 
-export function saveDefaultLocation(locationId: CivicLocationId) {
+export function saveDefaultLocation(locationId: string) {
   try {
-    window.localStorage.setItem(STORAGE_KEY, locationId);
-    listeners.forEach((listener) => listener());
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(STORAGE_KEY, locationId);
+    }
+    listeners.forEach((listener) => {
+      try {
+        listener();
+      } catch {
+        // ignore
+      }
+    });
     return true;
   } catch {
     return false;

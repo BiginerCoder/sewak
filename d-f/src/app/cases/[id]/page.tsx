@@ -8,6 +8,8 @@ import { getResidentProfile } from "@/lib/auth-session";
 import { Camera, ClipboardEdit, ExternalLink, Info, MapPin } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { CommentItem } from "@/components/CommentItem";
+import { PostModerationBar } from "@/components/PostModerationBar";
 
 export const dynamic = "force-dynamic";
 
@@ -29,6 +31,8 @@ export default async function CaseDetail({ params }: { params: Promise<{ id: str
   return (
     <div className="workspace-grid has-rail">
       <div className="primary-content">
+        <PostModerationBar issueId={issue.id} currentStatus={issue.status} />
+
         {/* 1 + 2: Title & problem */}
         <section className="card" aria-labelledby="case-title">
           <div className="row wrap" style={{ gap: 10 }}>
@@ -152,16 +156,14 @@ export default async function CaseDetail({ params }: { params: Promise<{ id: str
         {/* 7: Discussion */}
         <section className="card" aria-labelledby="dc-title">
           <h2 id="dc-title" className="section-title" style={{ marginBottom: 16 }}>Discussion <span className="muted" style={{ fontWeight: 500, fontSize: 16 }}>({d.comments.length})</span></h2>
-          <div className="stack" style={{ gap: 18 }}>
+          <div className="stack" style={{ gap: 12 }}>
             {d.comments.length === 0 && <p className="muted" style={{ margin: 0 }}>No comments yet. Be the first to add context.</p>}
             {d.comments.map((c) => (
-              <div className="comment" key={c.id}>
-                <Avatar name={c.author} />
-                <div>
-                  <b>{c.author}</b> <span className="small muted">· {timeAgo(c.createdAt)}</span>
-                  <p>{c.body}</p>
-                </div>
-              </div>
+              <CommentItem
+                key={c.id}
+                comment={c}
+                timeAgoText={timeAgo(c.createdAt)}
+              />
             ))}
           </div>
           <hr className="divider" />

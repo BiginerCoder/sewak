@@ -29,6 +29,11 @@ The API listens on `127.0.0.1:8080` by default. Set `GOVLINKS_HOST`,
 `PORT`, and `GOVLINKS_ALLOW_DEMO` through the environment for local deployment
 configuration. Demo mode may only bind to a loopback address.
 
+The area directory uses `GET /api/links` with exactly one `ward_id`,
+`local_body_id`, `district_id`, or `state_id` query parameter. It returns active
+links whose configured geographic scope covers that area, including status and
+safe-open metadata.
+
 The test and benchmark tools use synthetic/demo data. **`demo.py` drops and
 recreates the `govlinks_demo` database; only run it against a disposable
 database.** To exercise API tests, initialize the demo schema and seed with the

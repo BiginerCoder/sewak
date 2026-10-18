@@ -602,9 +602,26 @@ details.disclosure .body { padding: 12px; display: grid; gap: 12px; }
 .govlink-ranking dd { margin: 2px 0 0; font-weight: 700; }
 .govlink-ranking p { grid-column: 1 / -1; margin: 0; }
 .btn.selected { border-color: var(--primary); background: var(--soft); color: var(--evergreen); }
+.area-links { display: grid; gap: 20px; }
+.area-location { display: grid; gap: 14px; }
+.area-location .section-title, #area-links-heading { display: flex; align-items: center; gap: 8px; }
+.area-location-controls { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+.area-location-search { flex: 1 1 320px; }
+.area-location-search .input { width: 100%; }
+.area-suggestions { display: grid; gap: 6px; max-height: 280px; overflow-y: auto; }
+.area-suggestions button { display: flex; align-items: center; gap: 9px; min-height: 40px; padding: 8px 10px; text-align: left; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); cursor: pointer; }
+.area-suggestions button:hover, .area-suggestions button[aria-selected="true"] { background: var(--soft); border-color: var(--primary); }
+.area-suggestions svg { flex: none; color: var(--primary); }
+.area-privacy { border-top: 1px solid var(--border); padding-top: 12px; }
+.area-link-list { display: grid; gap: 12px; }
+.area-link-card { display: grid; gap: 12px; padding: 18px; }
+.area-attribution { margin: 0; }
+.area-attribution a { color: var(--link); text-decoration: underline; }
 @media (max-width: 767px) {
   .govlink-result { padding: 14px; }
   .govlink-score b { font-size: 20px; }
+  .area-location-controls > .btn { width: 100%; justify-content: center; }
+  .area-link-card { padding: 14px; }
 }
 
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
@@ -655,4 +672,310 @@ details.disclosure .body { padding: 12px; display: grid; gap: 12px; }
 @media (max-width: 767px) {
   .sewak-chat { padding: 14px; }
   .sewak-chat-messages { max-height: 250px; }
+}
+
+/* Location Picker & Modal Subsystem */
+.location-picker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm, 8px);
+  padding: 4px 8px;
+  box-shadow: var(--shadow-sm, 0 1px 2px rgba(0,0,0,0.05));
+  max-width: 100%;
+}
+.location-picker.compact {
+  padding: 2px 6px;
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+.location-picker-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  padding: 4px 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  text-align: left;
+  transition: background 0.15s ease;
+}
+.location-picker-btn:hover {
+  background: var(--surface-sunken);
+}
+.location-pin-icon {
+  color: var(--primary);
+  flex-shrink: 0;
+}
+.location-picker-text {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.location-picker-change-tag {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--link);
+  background: var(--soft);
+  padding: 1px 6px;
+  border-radius: 10px;
+  margin-left: 2px;
+}
+.location-gps-quick-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 6px;
+}
+.location-default-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--green-fg);
+  background: var(--green-bg);
+  padding: 2px 7px;
+  border-radius: 10px;
+}
+.location-toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  box-shadow: var(--shadow-lg, 0 10px 25px rgba(0,0,0,0.15));
+  animation: slideUpToast 0.25s ease-out;
+}
+.location-toast.notice {
+  background: var(--green-bg);
+  color: var(--green-fg);
+  border: 1px solid var(--green-fg);
+}
+.location-toast.error {
+  background: var(--red-bg);
+  color: var(--red-fg);
+  border: 1px solid var(--red-fg);
+}
+.toast-close {
+  background: none;
+  border: none;
+  color: currentColor;
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+}
+@keyframes slideUpToast {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* Modal styles */
+.location-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.location-modal {
+  width: 100%;
+  max-width: 580px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+  border-radius: 14px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.22);
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+.location-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--border);
+}
+.location-modal-body {
+  padding: 20px 22px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.location-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 22px;
+  border-top: 1px solid var(--border);
+  background: var(--surface-sunken);
+}
+.location-gps-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: var(--soft);
+  border: 1px solid var(--border);
+}
+.location-search-box .search {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.location-suggestions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 4px;
+  background: var(--surface-sunken);
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+.location-suggestion-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s ease;
+}
+.location-suggestion-item:hover {
+  background: var(--soft);
+  border-color: var(--primary);
+}
+.location-sugg-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+.location-sugg-addr {
+  font-size: 11.5px;
+  margin-top: 2px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.pincode-pill {
+  font-size: 10.5px;
+  font-weight: 700;
+  background: var(--primary);
+  color: #fff;
+  padding: 1px 6px;
+  border-radius: 10px;
+}
+.saved-locations-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.saved-location-chip {
+  display: inline-flex;
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  overflow: hidden;
+  font-size: 12px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+}
+.saved-location-chip.active {
+  border-color: var(--primary);
+  background: var(--soft);
+}
+.saved-location-chip-click {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: inherit;
+  color: var(--text);
+}
+.saved-location-chip-del {
+  padding: 5px 8px;
+  background: none;
+  border: none;
+  border-left: 1px solid var(--border);
+  cursor: pointer;
+  color: var(--text-2);
+  display: flex;
+}
+.saved-location-chip-del:hover {
+  color: var(--red-fg);
+}
+.star-icon {
+  color: #f59e0b;
+}
+.saved-tag {
+  font-weight: 700;
+}
+.saved-name {
+  color: var(--text);
+}
+.preset-wards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px;
+}
+.preset-ward-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s ease;
+}
+.preset-ward-card:hover {
+  border-color: var(--primary);
+}
+.preset-ward-card.active {
+  border-color: var(--primary);
+  background: var(--soft);
+}
+.preset-ward-card .check-icon {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  color: var(--primary);
+}
+.spin {
+  animation: sewak-spin 1s linear infinite;
 }

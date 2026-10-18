@@ -3,6 +3,8 @@
   GET  /api/health
   GET  /api/wards                 wards with their local body, district and state (for a location picker)
   GET  /api/categories            problem categories (for correcting a wrong guess)
+  GET  /api/links?ward_id=1       all active service links that cover an area
+                                  accepts exactly one ward_id, local_body_id, district_id or state_id
   POST /api/recommendations       {"query": "...", "ward_id": 1}  or  {"query": "...", "district_id": ..}
                                   optional "category": "Sewerage" overrides the detected category
                                   -> {"problem_category", "recommended_link", "results": [...]}
@@ -72,6 +74,94 @@ def _rows(cur):
     return [dict(zip(cols, r)) for r in cur.fetchall()]
 
 
+def _area_links(conn, query):
+    area_keys = ("ward_id", "local_body_id", "district_id", "state_id")
+    selected = [(key, _int(query.get(key))) for key in area_keys if query.get(key) not in (None, "")]
+    if len(selected) != 1 or selected[0][1] is None or selected[0][1] <= 0:
+        raise ValueError("exactly one valid area id is required")
+
+    key, area_id = selected[0]
+    with conn.cursor() as cur:
+        if key == "ward_id":
+            cur.execute("SELECT ward_id, local_body_id, district_id, state_id FROM resolve_location(%s)", (area_id,))
+            row = cur.fetchone()
+            if row is None:
+                return None
+            ward_id, local_body_id, district_id, state_id = row
+        elif key == "local_body_id":
+            cur.execute("""SELECT lb.local_body_id, lb.district_id, d.state_id
+                           FROM local_bodies lb JOIN districts d USING (district_id)
+                           WHERE lb.local_body_id=%s""", (area_id,))
+            row = cur.fetchone()
+            if row is None:
+                return None
+            local_body_id, district_id, state_id = row
+            ward_id = None
+        elif key == "district_id":
+            cur.execute("SELECT district_id, state_id FROM districts WHERE district_id=%s", (area_id,))
+            row = cur.fetchone()
+            if row is None:
+                return None
+            district_id, state_id = row
+            local_body_id = ward_id = None
+        else:
+            cur.execute("SELECT state_id FROM states WHERE state_id=%s", (area_id,))
+            row = cur.fetchone()
+            if row is None:
+                return None
+            state_id = row[0]
+            district_id = local_body_id = ward_id = None
+
+        cur.execute("SELECT country_id FROM states WHERE state_id=%s", (state_id,))
+        country_id = cur.fetchone()[0]
+        cur.execute("""WITH matching_locations AS (
+                         SELECT wl.website_id,
+                                max(CASE WHEN wl.ward_id IS NOT NULL THEN 5
+                                         WHEN wl.local_body_id IS NOT NULL THEN 4
+                                         WHEN wl.district_id IS NOT NULL THEN 3
+                                         WHEN wl.state_id IS NOT NULL THEN 2 ELSE 1 END) AS location_rank,
+                                max(wl.priority) AS priority
+                         FROM website_locations wl
+                         WHERE wl.is_active
+                           AND (wl.country_id IS NULL OR wl.country_id=%s)
+                           AND (wl.state_id IS NULL OR wl.state_id=%s)
+                           AND (wl.district_id IS NULL OR wl.district_id=%s)
+                           AND (wl.local_body_id IS NULL OR wl.local_body_id=%s)
+                           AND (wl.ward_id IS NULL OR wl.ward_id=%s)
+                         GROUP BY wl.website_id
+                       )
+                       SELECT l.link_id, l.title, l.url, l.action, l.link_type, l.state,
+                              l.trust_label, l.steps, l.login_required, l.last_verified_at,
+                              c.category_name, w.website_name, w.domain, w.official_status,
+                              w.is_demo, m.location_rank,
+                              CASE m.location_rank WHEN 5 THEN 'ward' WHEN 4 THEN 'local body'
+                                   WHEN 3 THEN 'district' WHEN 2 THEN 'state' ELSE 'country' END AS location_scope,
+                              COALESCE(l.is_partner_promoted, false) AS is_partner_promoted,
+                              l.partner_id, l.partner_note
+                       FROM website_links l
+                       JOIN websites w ON w.website_id=l.website_id AND w.status
+                       JOIN problem_categories c ON c.category_id=l.category_id
+                       JOIN matching_locations m ON m.website_id=l.website_id
+                       WHERE l.status AND l.state <> 'retired'
+                       ORDER BY l.is_partner_promoted DESC, m.location_rank DESC, m.priority DESC, w.official_status DESC,
+                                (l.state='verified') DESC, l.title""",
+                    (country_id, state_id, district_id, local_body_id, ward_id))
+        links = _rows(cur)
+
+    allowed_domains = _allowed_domains(conn)
+    for link in links:
+        link["openable"] = _host_ok(link["url"], allowed_domains) and (
+            ALLOW_DEMO or not link["is_demo"]
+        )
+    return links
+
+
+def _allowed_domains(conn):
+    with conn.cursor() as cur:
+        cur.execute("SELECT pattern, kind FROM allowed_domains")
+        return cur.fetchall()
+
+
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
         logging.info(
@@ -100,7 +190,7 @@ class Handler(BaseHTTPRequestHandler):
         q = dict(urllib.parse.parse_qsl(u.query))
         if u.path == "/api/health":
             return self._json(200, {"ok": True, "demo": ALLOW_DEMO})
-        if not (u.path.startswith("/go/") or u.path in ("/api/wards", "/api/categories")):
+        if not (u.path.startswith("/go/") or u.path in ("/api/wards", "/api/categories", "/api/links")):
             return self._json(404, {"error": "not found"})
         conn = connect()
         try:
@@ -118,6 +208,11 @@ class Handler(BaseHTTPRequestHandler):
                                    FROM problem_categories c LEFT JOIN problem_categories p ON p.category_id = c.parent_category_id
                                    ORDER BY COALESCE(p.category_name, c.category_name), p.category_name NULLS FIRST, c.category_name""")
                     return self._json(200, _rows(cur))
+            if u.path == "/api/links":
+                links = _area_links(conn, q)
+                if links is None:
+                    return self._json(404, {"error": "area not found"})
+                return self._json(200, {"links": links})
             link_id = int(u.path.split("/")[2])
             user_id = _int(q.get("user_id"))
             if user_id is None:
@@ -173,6 +268,68 @@ class Handler(BaseHTTPRequestHandler):
                                 (int(b["link_id"]), _int(b.get("user_id")), b["reason"]))
                 conn.commit()
                 return self._json(200, {"ok": True})
+            if self.path == "/api/partner/links":
+                title = str(b.get("title", "")).strip()
+                url = str(b.get("url", "")).strip()
+                category_id = _int(b.get("category_id"))
+                if not title or not url or not category_id:
+                    return self._json(400, {"error": "title, url and category_id are required"})
+                partner_id = _int(b.get("partner_id")) or 2
+                partner_note = str(b.get("partner_note", "")).strip() or "Verified Partner Link"
+                action = b.get("action", "file_complaint")
+                link_type = b.get("link_type", "direct_form")
+                steps = b.get("steps")
+                domain = host_of(url)
+
+                with conn.cursor() as cur:
+                    cur.execute("SELECT website_id FROM websites WHERE domain = %s", (domain,))
+                    row = cur.fetchone()
+                    if row:
+                        website_id = row[0]
+                    else:
+                        cur.execute("""
+                            INSERT INTO websites (website_name, domain, base_url, website_type, official_status, is_demo)
+                            VALUES (%s, %s, %s, 'service', true, %s) RETURNING website_id
+                        """, (domain, domain, f"https://{domain}", domain.endswith(".example") or "127.0.0.1" in domain))
+                        website_id = cur.fetchone()[0]
+
+                    # Ensure website category
+                    cur.execute("""
+                        INSERT INTO website_categories (website_id, category_id, priority)
+                        VALUES (%s, %s, 10) ON CONFLICT (website_id, category_id) DO NOTHING
+                    """, (website_id, category_id))
+
+                    # If location scope is passed, add website_location
+                    ward_id = _int(b.get("ward_id"))
+                    local_body_id = _int(b.get("local_body_id"))
+                    district_id = _int(b.get("district_id"))
+                    state_id = _int(b.get("state_id"))
+                    if any([ward_id, local_body_id, district_id, state_id]):
+                        cur.execute("""
+                            INSERT INTO website_locations (website_id, state_id, district_id, local_body_id, ward_id, priority)
+                            VALUES (%s, %s, %s, %s, %s, 10)
+                        """, (website_id, state_id, district_id, local_body_id, ward_id))
+
+                    cur.execute("""
+                        INSERT INTO website_links (
+                            website_id, category_id, title, url, action, link_type, steps,
+                            trust_label, state, is_partner_promoted, partner_id, partner_note
+                        ) VALUES (
+                            %s, %s, %s, %s, %s, %s, %s,
+                            'PLATFORM_VERIFIED', 'verified', true, %s, %s
+                        ) ON CONFLICT (website_id, url) DO UPDATE
+                        SET is_partner_promoted = true,
+                            partner_note = EXCLUDED.partner_note,
+                            title = EXCLUDED.title,
+                            steps = EXCLUDED.steps,
+                            state = 'verified'
+                        RETURNING link_id
+                    """, (website_id, category_id, title, url, action, link_type, steps, partner_id, partner_note))
+                    new_link_id = cur.fetchone()[0]
+
+                conn.commit()
+                return self._json(200, {"ok": True, "link_id": new_link_id, "title": title})
+
             if self.path == "/api/dev/user":
                 if not ALLOW_DEMO:
                     return self._json(404, {"error": "not found"})

@@ -1,4 +1,4 @@
-git push origin master-- Government Service Discovery: normalized PostgreSQL schema
+-- Government Service Discovery: normalized PostgreSQL schema
 -- One generic table per concept. No per-state tables: scope is expressed by foreign keys.
 -- Raw evidence (votes, feedback, visits, health checks) is immutable; ranking numbers are derived.
 

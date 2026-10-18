@@ -4,6 +4,7 @@ import "@fontsource-variable/manrope";
 import "@fontsource-variable/inter";
 import "./globals.css";
 import { Header, MobileNav, Sidebar } from "@/components/shell";
+import { AuthProvider } from "@/lib/auth-context";
 
 export const dynamic = "force-dynamic";
 
@@ -28,19 +29,21 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <script dangerouslySetInnerHTML={{ __html: themeInit }} />
       </head>
       <body>
-        <a href="#main" className="skip-link">
-          Skip to main content
-        </a>
-        <div className="app">
-          <Sidebar />
-          <div className="main-col">
-            <Header />
-            <main id="main" className="workspace">
-              {children}
-            </main>
+        <AuthProvider>
+          <a href="#main" className="skip-link">
+            Skip to main content
+          </a>
+          <div className="app">
+            <Sidebar />
+            <div className="main-col">
+              <Header />
+              <main id="main" className="workspace">
+                {children}
+              </main>
+            </div>
           </div>
-        </div>
-        <MobileNav />
+          <MobileNav />
+        </AuthProvider>
       </body>
     </html>
   );

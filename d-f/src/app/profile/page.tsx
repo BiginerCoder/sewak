@@ -1,7 +1,7 @@
 import { Metric, PageHead } from "@/components/ui";
-import { CURRENT_RESIDENT, WARD, initials } from "@/lib/constants";
+import { ProfileCard } from "@/components/ProfileCard";
+import { CURRENT_RESIDENT, WARD } from "@/lib/constants";
 import { getContributions } from "@/lib/queries";
-import { getResidentProfile } from "@/lib/auth-session";
 import { Award, CheckCircle2, FileText, Lock, MessageSquare, Search, ThumbsUp, Users } from "lucide-react";
 import Link from "next/link";
 
@@ -9,9 +9,7 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "Profile" };
 
 export default async function ProfilePage() {
-  const resident = await getResidentProfile();
-  const c = await getContributions(resident?.email);
-  const displayName = resident?.displayName ?? CURRENT_RESIDENT;
+  const c = await getContributions();
   const resolvedByMe = c.reported.filter((i) => i.kind === "problem" && i.stage === 7).length;
   const verifs = c.verified.filter((v) => v.verdict === "fixed").length;
 
@@ -31,19 +29,9 @@ export default async function ProfilePage() {
 
       <div className="workspace-grid has-rail">
         <div className="primary-content">
-          <section className="card row" style={{ gap: 18 }}>
-            <span className="avatar" style={{ width: 64, height: 64, fontSize: 22 }} aria-hidden>
-              {initials(displayName)}
-            </span>
-            <div>
-              <h2 className="section-title">{displayName}</h2>
-              <div className="small muted">
-                {resident ? resident.email : "Demo resident"} · {WARD.name}, {WARD.locality}, {WARD.city}
-              </div>
-            </div>
-          </section>
+          <ProfileCard />
 
-          <section aria-label="Contribution summary" className="metrics" style={{ marginBottom: 0 }}>
+          <section aria-label="Contribution summary" className="metrics" style={{ marginBottom: 0, marginTop: 18 }}>
             <Metric label="Reported issues" value={c.reported.length} icon={FileText} />
             <Metric label="Confirmed issues" value={c.confirmed.length} note="Other residents' cases" icon={Users} tone="blue" />
             <Metric label="Resolution checks" value={c.verified.length} note={`${verifs} said fixed`} icon={ThumbsUp} tone="green" />

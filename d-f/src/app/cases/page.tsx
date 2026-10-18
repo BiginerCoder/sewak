@@ -1,5 +1,5 @@
 import { MiniProgress, PageHead, StatusBadge } from "@/components/ui";
-import { CASE_FILTERS, CIVIC_LOCATIONS, STAGES, categoryOf, matchCaseFilter, timeAgo } from "@/lib/constants";
+import { CASE_FILTERS, CIVIC_LOCATIONS, DEFAULT_LOCATION_ID, STAGES, categoryOf, civicLocation, civicLocationLabel, matchCaseFilter, timeAgo } from "@/lib/constants";
 import { LocationPicker } from "@/components/LocationPicker";
 import { getIssues } from "@/lib/queries";
 import { ArrowRight, Plus, Search } from "lucide-react";
@@ -12,10 +12,31 @@ export default async function CasesPage({ searchParams }: { searchParams: Promis
   const { status: s, q: rawQ, location: selectedLocation } = await searchParams;
   const status = CASE_FILTERS.some((x) => x.id === s) ? (s as string) : "all";
   const q = (rawQ ?? "").trim().toLowerCase();
-  const location = CIVIC_LOCATIONS.find((item) => item.id === selectedLocation) ?? CIVIC_LOCATIONS[0];
+  const location = civicLocation(selectedLocation || DEFAULT_LOCATION_ID);
   const locationId = location.id;
 
-  const all = (await getIssues()).filter((i) => i.kind === "problem" && i.locationId === locationId);
+  const rawAll = (await getIssues()).filter((i) => i.kind === "problem");
+  let all = rawAll.filter((i) => i.locationId === locationId);
+  let isAreaFallback = false;
+
+  if (all.length === 0) {
+    const pincode = locationId.startsWith("pin-") ? locationId.replace("pin-", "") : "";
+    const locality = location.locality?.toLowerCase();
+    const matched = rawAll.filter((i) => {
+      const text = `${i.locationText} ${i.title} ${i.description}`.toLowerCase();
+      if (pincode && text.includes(pincode)) return true;
+      if (locality && locality !== "area" && text.includes(locality)) return true;
+      return false;
+    });
+
+    if (matched.length > 0) {
+      all = matched;
+    } else {
+      all = rawAll;
+      isAreaFallback = true;
+    }
+  }
+
   const matchesQ = (i: (typeof all)[number]) =>
     !q ||
     [i.title, i.description, i.department ?? "", i.locationText, categoryOf(i.category).label, String(12300 + i.id), `#${12300 + i.id}`]
@@ -79,6 +100,14 @@ export default async function CasesPage({ searchParams }: { searchParams: Promis
                 </Link>
               ))}
             </nav>
+
+            {isAreaFallback && (
+              <div className="callout info" role="note" style={{ marginTop: 4 }}>
+                <span>
+                  <b>📍 No direct cases logged in {civicLocationLabel(location)} yet.</b> Showing active cases from neighbouring wards in Jaipur.
+                </span>
+              </div>
+            )}
           </div>
 
           <div className="case-list" aria-live="polite">

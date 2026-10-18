@@ -12,6 +12,30 @@ export type GovlinksWard = {
   state: string;
 };
 
+export type GovlinksAreaLink = {
+  link_id: number;
+  title: string;
+  url: string;
+  action: string;
+  link_type: string;
+  state: "candidate" | "verified" | "stale";
+  trust_label: string;
+  steps: string | null;
+  login_required: boolean;
+  last_verified_at: string | null;
+  category_name: string;
+  website_name: string;
+  domain: string;
+  official_status: boolean;
+  is_demo: boolean;
+  location_rank: number;
+  location_scope: string;
+  openable: boolean;
+  is_partner_promoted?: boolean;
+  partner_id?: number | null;
+  partner_note?: string | null;
+};
+
 export type GovlinksCategory = {
   category_id: number;
   category_name: string;
@@ -114,6 +138,13 @@ export const govlinks = {
   health: () => request<GovlinksHealth>("health"),
   wards: () => request<GovlinksWard[]>("wards"),
   categories: () => request<GovlinksCategory[]>("categories"),
+  areaLinks: (area: { ward_id?: number; local_body_id?: number; district_id?: number; state_id?: number }) => {
+    const params = new URLSearchParams();
+    for (const [key, value] of Object.entries(area)) {
+      if (value !== undefined) params.set(key, String(value));
+    }
+    return request<{ links: GovlinksAreaLink[] }>(`links?${params.toString()}`);
+  },
   recommend: async (input: { query: string; ward_id: number; user_id?: number; category?: string }) => {
     const result = await request<RawRecommendation>("recommendations", { ...input, limit: 5 });
     return {
@@ -155,4 +186,18 @@ export const govlinks = {
     request<{ ok: boolean }>("flags", { user_id, link_id, reason }),
   devUser: (established: boolean) =>
     request<{ user_id: number; established: boolean }>("dev/user", { established }),
+  createPartnerLink: (input: {
+    title: string;
+    url: string;
+    category_id: number;
+    partner_id?: number;
+    partner_note?: string;
+    action?: string;
+    link_type?: string;
+    steps?: string;
+    ward_id?: number;
+    local_body_id?: number;
+    district_id?: number;
+    state_id?: number;
+  }) => request<{ ok: boolean; link_id: number; title: string }>("partner/links", input),
 };

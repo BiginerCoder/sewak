@@ -11,6 +11,23 @@ recommendation API.
 The frontend calls Govlinks through a same-origin Next.js API proxy. The browser
 does not need direct access to the Govlinks service.
 
+## Area service directory
+
+Open **Area service links** from the navigation or home page to browse every
+active government service link listed for an area. Type a supported ward,
+locality, city, or district and choose a matching ward, or use **Use my
+location**. Device coordinates are sent to OpenStreetMap Nominatim for a
+one-time reverse lookup and are not stored by Sewak. GPS lookup can only resolve
+to areas in the Govlinks demo data; without ward-boundary data, it may show links
+for the local body or district rather than a precise ward. The interface labels
+that coverage level and marks demo, candidate, or stale links.
+
+The directory and its location picker require both the frontend and Govlinks API
+to be running with demo mode enabled for link opening. It needs no sign-in;
+demo visits use an anonymous local demo account. It only lists areas present in
+the Govlinks database, currently a small synthetic sample, and is not a verified
+national service directory.
+
 ## Sewak assistant chat
 
 The Ask for help page streams answers from NVIDIA's OpenAI-compatible chat

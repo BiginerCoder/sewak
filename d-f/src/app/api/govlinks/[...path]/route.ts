@@ -4,6 +4,7 @@ const API_METHODS: Record<string, string> = {
   health: "GET",
   wards: "GET",
   categories: "GET",
+  links: "GET",
   recommendations: "POST",
   visits: "POST",
   outcomes: "POST",
@@ -11,6 +12,7 @@ const API_METHODS: Record<string, string> = {
   feedback: "POST",
   flags: "POST",
   "dev/user": "POST",
+  "partner/links": "POST",
 };
 
 type Context = { params: Promise<{ path: string[] }> };
@@ -41,7 +43,7 @@ async function proxy(request: NextRequest, context: Context) {
   }
 
   const target = new URL(isGoPath ? `/go/${segments[1]}` : `/api/${path}`, base.origin);
-  if (isGoPath) target.search = new URL(request.url).search;
+  if (request.method === "GET") target.search = new URL(request.url).search;
 
   let upstream: Response;
   try {

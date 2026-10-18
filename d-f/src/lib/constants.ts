@@ -6,9 +6,17 @@ export const CIVIC_LOCATIONS = [
   { id: "pune-7", ward: "Ward 7", locality: "Pune", city: "Pune" },
 ] as const;
 export const DEFAULT_LOCATION_ID = CIVIC_LOCATIONS[0].id;
-export type CivicLocationId = (typeof CIVIC_LOCATIONS)[number]["id"];
-export const civicLocation = (id: string) => CIVIC_LOCATIONS.find((location) => location.id === id);
-export const civicLocationLabel = (location: (typeof CIVIC_LOCATIONS)[number]) =>
+export type CivicLocationId = string;
+export const civicLocation = (id: string) => {
+  const found = CIVIC_LOCATIONS.find((location) => location.id === id);
+  if (found) return found;
+  if (id.startsWith("pin-")) {
+    const pin = id.replace("pin-", "");
+    return { id, ward: `PIN ${pin}`, locality: `Area ${pin}`, city: "Jaipur" };
+  }
+  return { id, ward: "Local Area", locality: id, city: "Jaipur" };
+};
+export const civicLocationLabel = (location: { ward: string; locality: string; city: string }) =>
   `${location.ward} · ${location.locality === location.city ? location.city : `${location.locality}, ${location.city}`}`;
 export const CASE_BASE = 12300;
 

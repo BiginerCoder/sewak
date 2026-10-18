@@ -146,7 +146,7 @@ export function SourceLabel({ q }: { q: "official" | "demo" | "resident" | "comm
   return <span className={`source ${q}`}>{text}</span>;
 }
 
-export function WardSnapshot({ unresolved, resolved, location }: { unresolved: number; resolved: number; location: (typeof CIVIC_LOCATIONS)[number] }) {
+export function WardSnapshot({ unresolved, resolved, location }: { unresolved: number; resolved: number; location: { id?: string; ward: string; locality: string; city: string } }) {
   return (
     <section className="card widget" aria-labelledby="w-snap">
       <h3 id="w-snap">Ward snapshot</h3>

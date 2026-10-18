@@ -106,6 +106,14 @@ st, _, body = call("GET", "/api/wards")
 wards = json.loads(body)
 check("wards: lists wards with local body, district and state",
       st == 200 and any(w["ward_name"] == "Shastri Nagar" and w["district"] == "Jaipur" and w["state"] == "Rajasthan" for w in wards))
+st, _, body = call("GET", f"/api/links?ward_id={W24}")
+area_links = json.loads(body).get("links", [])
+check("area links: lists active area-scoped services with safe-open metadata",
+      st == 200 and area_links and all("location_scope" in item and "openable" in item for item in area_links))
+check("area links: rejects missing or conflicting area selectors",
+      call("GET", "/api/links")[0] == 400 and call("GET", f"/api/links?ward_id={W24}&district_id={JAIPUR}")[0] == 400)
+check("area links: returns 404 for an unknown area",
+      call("GET", "/api/links?ward_id=99999999")[0] == 404)
 st, _, body = call("GET", "/api/categories")
 cats = json.loads(body)
 check("categories: includes the tree and flags the general-grievance fallback",

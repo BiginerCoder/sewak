@@ -3,14 +3,12 @@ import {
   customType,
   index,
   integer,
-  jsonb,
   pgTable,
   serial,
   text,
   timestamp,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
-import { sql } from "drizzle-orm";
 
 const vector1024 = customType<{ data: number[]; driverData: string }>({
   dataType: () => "vector(1024)",
@@ -18,32 +16,18 @@ const vector1024 = customType<{ data: number[]; driverData: string }>({
   fromDriver: (value) => value.slice(1, -1).split(",").map(Number),
 });
 
-export const authProfiles = pgTable("auth_profiles", {
-  firebaseUid: text("firebase_uid").primaryKey(),
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
   email: text("email").notNull().unique(),
-  displayName: text("display_name").notNull(),
+  passwordHash: text("password_hash"),
+  role: text("role").notNull().default("citizen"), // citizen | partner | admin
+  partnerOrganization: text("partner_organization"),
+  partnerBadge: text("partner_badge"),
+  isVerified: boolean("is_verified").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
-
-export const residentActivity = pgTable(
-  "resident_activity",
-  {
-    id: serial("id").primaryKey(),
-    email: text("email").notNull(),
-    eventType: text("event_type").notNull(),
-    issueId: integer("issue_id"),
-    payload: jsonb("payload").$type<Record<string, unknown>>().notNull().default({}),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  },
-  (t) => [
-    index("resident_activity_issue").on(t.issueId),
-    index("resident_activity_email").on(t.email),
-    uniqueIndex("resident_activity_confirmation_once")
-      .on(t.email, t.issueId)
-      .where(sql`${t.eventType} = 'confirmation'`),
-  ],
-);
 
 /**
  * A civic post. `kind` = "problem" posts follow the seven-stage case lifecycle;
@@ -64,6 +48,9 @@ export const issues = pgTable("issues", {
   complaintRef: text("complaint_ref"),
   authorityNote: text("authority_note"),
   affectedCount: integer("affected_count").notNull().default(1),
+  status: text("status").notNull().default("active"), // active | under_review | hidden | resolved
+  moderatedBy: text("moderated_by"),
+  moderatedReason: text("moderated_reason"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
@@ -86,6 +73,11 @@ export const comments = pgTable(
     issueId: integer("issue_id").notNull(),
     author: text("author").notNull(),
     body: text("body").notNull(),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    deletedBy: text("deleted_by"),
+    deletedReason: text("deleted_reason"),
+    authorRole: text("author_role").notNull().default("citizen"),
+    authorBadge: text("author_badge"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index("comments_issue").on(t.issueId)],

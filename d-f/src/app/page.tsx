@@ -1,5 +1,5 @@
 import { Metric, IssueCard, PageHead, PriorityIssues, SourceLabel, WardSnapshot } from "@/components/ui";
-import { CIVIC_LOCATIONS, FEED_FILTERS, civicLocationLabel, matchFeedFilter, isUnresolved, timeAgo } from "@/lib/constants";
+import { CIVIC_LOCATIONS, DEFAULT_LOCATION_ID, FEED_FILTERS, civicLocation, civicLocationLabel, matchFeedFilter, isUnresolved, timeAgo } from "@/lib/constants";
 import { getIssues, getRecentUpdates, getStats } from "@/lib/queries";
 import { LocationPicker } from "@/components/LocationPicker";
 import { IconAlertCircle, IconBuildingBank, IconCircleCheck, IconFileText, IconNews, IconPlus, IconSearch, IconUsers } from "@tabler/icons-react";
@@ -10,10 +10,13 @@ export const dynamic = "force-dynamic";
 export default async function HomePage({ searchParams }: { searchParams: Promise<{ filter?: string; location?: string }> }) {
   const { filter: f, location: selectedLocation } = await searchParams;
   const filter = FEED_FILTERS.some((x) => x.id === f) ? (f as string) : "all";
-  const location = CIVIC_LOCATIONS.find((item) => item.id === selectedLocation) ?? CIVIC_LOCATIONS[0];
+  const location = civicLocation(selectedLocation || DEFAULT_LOCATION_ID);
   const locationId = location.id;
   const [allIssues, stats, updates] = await Promise.all([getIssues(), getStats(locationId), getRecentUpdates(4, locationId)]);
-  const issues = allIssues.filter((issue) => issue.locationId === locationId);
+  let issues = allIssues.filter((issue) => issue.locationId === locationId);
+  if (issues.length === 0) {
+    issues = allIssues.slice(0, 6);
+  }
 
   const feed = issues.filter((i) => matchFeedFilter(i, filter));
   const priority = issues.filter(isUnresolved).sort((a, b) => b.affectedCount - a.affectedCount).slice(0, 3);
@@ -28,6 +31,9 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
             <LocationPicker locationId={locationId} />
             <Link href="/ask" className="btn btn-secondary">
               <IconSearch size={16} aria-hidden /> Find help
+            </Link>
+            <Link href="/services" className="btn btn-secondary">
+              <IconBuildingBank size={16} aria-hidden /> Area services
             </Link>
             <Link href={`/report?location=${locationId}`} className="btn btn-primary">
               <IconPlus size={16} aria-hidden /> Report a problem

@@ -7,9 +7,9 @@ export const metadata = { title: "Demo service page" };
 export default async function PlaceholderPage({
   searchParams,
 }: {
-  searchParams: Promise<{ host?: string; title?: string }>;
+  searchParams: Promise<{ host?: string; title?: string; from?: string }>;
 }) {
-  const { host, title } = await searchParams;
+  const { host, title, from } = await searchParams;
 
   return (
     <>
@@ -22,10 +22,10 @@ export default async function PlaceholderPage({
           <span>Demo destination: <b>{title || "Government service"}</b>{host ? ` (${host})` : ""}</span>
         </div>
         <p className="small muted" style={{ margin: 0 }}>
-          The visit has been logged. Return to the help assistant to report whether this page was useful.
+          No real government service is contacted from this sample page.
         </p>
-        <Link href="/ask" className="btn btn-primary" style={{ width: "fit-content" }}>
-          <ArrowLeft size={16} aria-hidden /> Return to help
+        <Link href={from === "services" ? "/services" : "/ask"} className="btn btn-primary" style={{ width: "fit-content" }}>
+          <ArrowLeft size={16} aria-hidden /> {from === "services" ? "Return to area services" : "Return to help"}
         </Link>
       </section>
     </>

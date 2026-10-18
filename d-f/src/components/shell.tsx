@@ -1,10 +1,11 @@
 "use client";
 
-import { CIVIC_LOCATIONS, DEFAULT_LOCATION_ID, WARD, caseNumber } from "@/lib/constants";
+import { CIVIC_LOCATIONS, CURRENT_RESIDENT, DEFAULT_LOCATION_ID, WARD, caseNumber, initials } from "@/lib/constants";
 import {
   ClipboardList,
   CircleDot,
   CheckCircle2,
+  Building2,
   FilePlus2,
   HandHeart,
   HelpCircle,
@@ -22,7 +23,8 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { ThemeToggle } from "./ThemeToggle";
 import { LocationPicker } from "./LocationPicker";
-import { AccountAccess } from "./AccountAccess";
+import { RoleSwitcher } from "./RoleSwitcher";
+import { useAuth } from "@/lib/auth-context";
 
 type Item = { id: string; label: string; href: string; icon: LucideIcon };
 const GROUPS: { title: string; items: Item[] }[] = [
@@ -31,6 +33,7 @@ const GROUPS: { title: string; items: Item[] }[] = [
     items: [
       { id: "home", label: "Home", href: "/", icon: Home },
       { id: "ask", label: "Ask for help", href: "/ask", icon: HelpCircle },
+      { id: "services", label: "Area service links", href: "/services", icon: Building2 },
       { id: "report", label: "Report a problem", href: "/report", icon: FilePlus2 },
     ],
   },
@@ -57,6 +60,7 @@ function useActiveId() {
   const sp = useSearchParams();
   if (path === "/") return "home";
   if (path.startsWith("/ask")) return "ask";
+  if (path.startsWith("/services")) return "services";
   if (path.startsWith("/report")) return "report";
   if (path.startsWith("/cases")) {
     if (path === "/cases") {
@@ -74,9 +78,22 @@ function useActiveId() {
 
 function NavGroups() {
   const active = useActiveId();
+  const { user, isAdmin, isPartner } = useAuth();
+
+  const groups = [...GROUPS];
+  if (isAdmin || isPartner) {
+    groups.push({
+      title: "Control & Verification",
+      items: [
+        ...(isAdmin ? [{ id: "admin", label: "Admin Console", href: "/admin", icon: ShieldCheck }] : []),
+        { id: "partner_links", label: "Add Verified Link", href: "/services?action=add_link", icon: Building2 },
+      ],
+    });
+  }
+
   return (
     <>
-      {GROUPS.map((g) => (
+      {groups.map((g) => (
         <div className="nav-group" key={g.title}>
           <div className="nav-group-title">{g.title}</div>
           {g.items.map((it) => (
@@ -103,6 +120,7 @@ export function BrandMark({ size = 20 }: { size?: number }) {
 }
 
 export function Sidebar() {
+  const { user } = useAuth();
   return (
     <aside className="sidebar" aria-label="Application sidebar">
       <Link href="/" className="brand" aria-label="Civic Network home">
@@ -129,11 +147,18 @@ export function Sidebar() {
           </span>
         </div>
         <ThemeToggle variant="row" />
-        <AccountAccess variant="sidebar" />
+        <RoleSwitcher variant="sidebar" />
+        <Link href="/profile" className="resident-row" aria-label={`Profile: ${user.name}`} data-label={user.name}>
+          <span className="avatar">{initials(user.name)}</span>
+          <span className="resident-text">
+            <b>{user.name}</b>
+            <small>{user.partnerBadge || `${user.role.toUpperCase()} account`}</small>
+          </span>
+        </Link>
         <div className="demo-pill" title="All cases, residents and contacts are sample data" role="note">
           <ShieldCheck size={14} aria-hidden />
-          <span className="demo-text">Demo data only</span>
-          <span className="sr-only">Demo data only</span>
+          <span className="demo-text">Demo mode active</span>
+          <span className="sr-only">Demo mode active</span>
         </div>
       </div>
     </aside>
@@ -142,6 +167,7 @@ export function Sidebar() {
 
 const TITLES: Record<string, string> = {
   "/ask": "Ask for help",
+  "/services": "Area service links",
   "/report": "Report a problem",
   "/cases": "Cases",
   "/place": "Ward information",
@@ -150,9 +176,10 @@ const TITLES: Record<string, string> = {
 };
 
 export function Header() {
+  const { user } = useAuth();
   const path = usePathname();
   const searchParams = useSearchParams();
-  const selectedLocationId = CIVIC_LOCATIONS.find((location) => location.id === searchParams.get("location"))?.id ?? DEFAULT_LOCATION_ID;
+  const selectedLocationId = searchParams.get("location") || DEFAULT_LOCATION_ID;
   const crumbs: { label: string; href?: string }[] = [{ label: "Home", href: "/" }];
   const m = path.match(/^\/cases\/(\d+)/);
   if (path === "/") crumbs.splice(0, 1, { label: "Home" });
@@ -171,7 +198,7 @@ export function Header() {
       <div className="crumbs">
         <div className="crumb-context">
           <Suspense fallback={<span>{WARD.name} / {WARD.locality}, {WARD.city}</span>}>
-            <LocationPicker locationId={DEFAULT_LOCATION_ID} compact />
+            <LocationPicker locationId={selectedLocationId} compact />
           </Suspense>
         </div>
         <nav aria-label="Breadcrumb" className="crumb-trail">
@@ -201,13 +228,16 @@ export function Header() {
           <Search size={18} aria-hidden />
         </Link>
         <ThemeToggle />
+        <RoleSwitcher variant="header" />
         {path !== "/report" && (
           <Link href={`/report?location=${selectedLocationId}`} className="btn btn-primary top-report">
             <Plus size={16} aria-hidden />
             <span className="btn-label">Report</span>
           </Link>
         )}
-        <AccountAccess variant="header" />
+        <Link href="/profile" className="avatar" aria-label={`Profile: ${user.name}`} title={user.name}>
+          {initials(user.name)}
+        </Link>
       </div>
     </header>
   );
@@ -216,6 +246,7 @@ export function Header() {
 const MOBILE: Item[] = [
   { id: "home", label: "Home", href: "/", icon: Home },
   { id: "ask", label: "Ask", href: "/ask", icon: HelpCircle },
+  { id: "services", label: "Services", href: "/services", icon: Building2 },
   { id: "report", label: "Report", href: "/report", icon: FilePlus2 },
   { id: "cases", label: "Cases", href: "/cases", icon: ClipboardList },
   { id: "place", label: "Place", href: "/place", icon: MapPin },
