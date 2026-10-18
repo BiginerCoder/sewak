@@ -4,6 +4,7 @@ import {
   EVIDENCE_PHASES, REOPEN_THRESHOLD, VERIFY_THRESHOLD, caseNumber, categoryOf, civicLocation, fmtDate, fmtDateTime, stageOf, timeAgo,
 } from "@/lib/constants";
 import { getIssueDetail } from "@/lib/queries";
+import { getResidentProfile } from "@/lib/auth-session";
 import { Camera, ClipboardEdit, ExternalLink, Info, MapPin } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -14,7 +15,8 @@ export default async function CaseDetail({ params }: { params: Promise<{ id: str
   const { id } = await params;
   const n = Number(id);
   if (!Number.isInteger(n)) notFound();
-  const d = await getIssueDetail(n);
+  const resident = await getResidentProfile();
+  const d = await getIssueDetail(n, resident?.email);
   if (!d) notFound();
   const { issue } = d;
   const issueLocation = civicLocation(issue.locationId);

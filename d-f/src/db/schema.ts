@@ -3,18 +3,47 @@ import {
   customType,
   index,
   integer,
+  jsonb,
   pgTable,
   serial,
   text,
   timestamp,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 
 const vector1024 = customType<{ data: number[]; driverData: string }>({
   dataType: () => "vector(1024)",
   toDriver: (value) => `[${value.join(",")}]`,
   fromDriver: (value) => value.slice(1, -1).split(",").map(Number),
 });
+
+export const authProfiles = pgTable("auth_profiles", {
+  firebaseUid: text("firebase_uid").primaryKey(),
+  email: text("email").notNull().unique(),
+  displayName: text("display_name").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const residentActivity = pgTable(
+  "resident_activity",
+  {
+    id: serial("id").primaryKey(),
+    email: text("email").notNull(),
+    eventType: text("event_type").notNull(),
+    issueId: integer("issue_id"),
+    payload: jsonb("payload").$type<Record<string, unknown>>().notNull().default({}),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("resident_activity_issue").on(t.issueId),
+    index("resident_activity_email").on(t.email),
+    uniqueIndex("resident_activity_confirmation_once")
+      .on(t.email, t.issueId)
+      .where(sql`${t.eventType} = 'confirmation'`),
+  ],
+);
 
 /**
  * A civic post. `kind` = "problem" posts follow the seven-stage case lifecycle;

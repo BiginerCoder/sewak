@@ -3,6 +3,8 @@
 .env.*
 !.env.example
 !.env.*.example
+/d-f/.env
+/govlinks/civic-firebase.js
 
 # Operating system and editor files
 .DS_Store

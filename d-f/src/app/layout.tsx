@@ -9,20 +9,17 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: { default: "Civic Network", template: "%s · Civic Network" },
-  description: "Report local problems, support existing cases, and follow progress in your neighbourhood. Demo data.",
+  description: "Report local problems, support existing cases, and follow progress in your neighbourhood.",
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#F5F8F6" },
-    { media: "(prefers-color-scheme: dark)", color: "#0D1614" },
-  ],
+  themeColor: "#F5F8F6",
 };
 
-const themeInit = `try{var t=localStorage.getItem('cn-theme');if(!t){t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}document.documentElement.dataset.theme=t}catch(e){}`;
+const themeInit = `try{var t=localStorage.getItem('cn-theme')||'light';document.documentElement.dataset.theme=t}catch(e){document.documentElement.dataset.theme='light'}`;
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (

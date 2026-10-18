@@ -1,6 +1,7 @@
 import { Metric, PageHead } from "@/components/ui";
-import { CURRENT_RESIDENT, WARD } from "@/lib/constants";
+import { CURRENT_RESIDENT, WARD, initials } from "@/lib/constants";
 import { getContributions } from "@/lib/queries";
+import { getResidentProfile } from "@/lib/auth-session";
 import { Award, CheckCircle2, FileText, Lock, MessageSquare, Search, ThumbsUp, Users } from "lucide-react";
 import Link from "next/link";
 
@@ -8,7 +9,9 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "Profile" };
 
 export default async function ProfilePage() {
-  const c = await getContributions();
+  const resident = await getResidentProfile();
+  const c = await getContributions(resident?.email);
+  const displayName = resident?.displayName ?? CURRENT_RESIDENT;
   const resolvedByMe = c.reported.filter((i) => i.kind === "problem" && i.stage === 7).length;
   const verifs = c.verified.filter((v) => v.verdict === "fixed").length;
 
@@ -30,12 +33,12 @@ export default async function ProfilePage() {
         <div className="primary-content">
           <section className="card row" style={{ gap: 18 }}>
             <span className="avatar" style={{ width: 64, height: 64, fontSize: 22 }} aria-hidden>
-              {CURRENT_RESIDENT.split(" ").map((p) => p[0]).join("")}
+              {initials(displayName)}
             </span>
             <div>
-              <h2 className="section-title">{CURRENT_RESIDENT}</h2>
+              <h2 className="section-title">{displayName}</h2>
               <div className="small muted">
-                Demo resident · {WARD.name}, {WARD.locality}, {WARD.city}
+                {resident ? resident.email : "Demo resident"} · {WARD.name}, {WARD.locality}, {WARD.city}
               </div>
             </div>
           </section>

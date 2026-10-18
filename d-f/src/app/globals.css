@@ -4,6 +4,7 @@
    Civic Network design system
    ============================================================ */
 :root {
+  color-scheme: light;
   --primary: #0f6b63;
   --primary-hover: #0b554f;
   --evergreen: #123f3b;
@@ -313,6 +314,47 @@ button { cursor: pointer; }
 @media (max-width: 767px) { .btn { min-height: 44px; } .btn-sm { min-height: 40px; } .icon-btn { width: 44px; height: 44px; } }
 .link { color: var(--link); font-weight: 600; }
 .link:hover { text-decoration: underline; }
+
+/* Resident authentication */
+.auth-layout { display: grid; gap: 22px; width: min(100%, 520px); margin: 8px auto 48px; }
+.auth-intro { display: flex; align-items: flex-start; gap: 15px; padding: 8px 2px; }
+.auth-brand-mark { width: 46px; height: 46px; border-radius: 13px; font-family: var(--font-head); font-size: 14px; font-weight: 800; }
+.auth-intro h1 { margin: 0; font-size: clamp(25px, 5vw, 32px); line-height: 1.15; font-weight: 800; }
+.auth-intro .muted { margin: 8px 0 0; }
+.auth-intro .eyebrow { margin: 0 0 5px; }
+.auth-card { padding: clamp(20px, 5vw, 30px); }
+.auth-card-heading { margin-bottom: 22px; }
+.auth-card-heading h2 { margin: 12px 0 5px; font-size: 23px; font-weight: 800; }
+.auth-card-heading p { margin: 0; }
+.auth-form { gap: 16px; }
+.auth-options { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.auth-check { display: inline-flex; align-items: center; gap: 8px; color: var(--text-2); font-size: 13px; cursor: pointer; }
+.auth-check input { width: 16px; height: 16px; margin: 0; accent-color: var(--primary); }
+.auth-password-wrap { position: relative; }
+.auth-password-wrap .input { padding-right: 48px; }
+.auth-password-toggle { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); display: grid; place-items: center; width: 36px; height: 36px; border: 0; border-radius: 7px; color: var(--text-2); background: transparent; }
+.auth-password-toggle:hover { background: var(--soft); color: var(--text); }
+.auth-error[role="status"] { margin-bottom: 16px; }
+.auth-submit { margin-top: 3px; }
+.auth-switch { margin-top: 20px; padding-top: 17px; border-top: 1px solid var(--border); text-align: center; }
+.auth-guest { margin: 15px 0 0; text-align: center; }
+.auth-error { margin: 0; padding: 10px 12px; border-radius: 9px; background: var(--red-bg); color: var(--red-fg); font-size: 13px; font-weight: 600; }
+.auth-success { margin: 0; padding: 10px 12px; border-radius: 9px; background: var(--green-bg); color: var(--green-fg); font-size: 13px; font-weight: 600; }
+.account-header { display: flex; align-items: center; justify-content: flex-end; gap: 8px; min-width: 0; }
+.account-name { display: inline-flex; align-items: center; gap: 8px; min-width: 0; font-size: 13px; font-weight: 650; }
+.account-name > span:last-child { overflow: hidden; max-width: 120px; text-overflow: ellipsis; white-space: nowrap; }
+.account-sidebar { display: grid; gap: 6px; }
+.account-sidebar .resident-row { min-width: 0; }
+.account-sidebar .resident-text { min-width: 0; overflow: hidden; }
+.account-sidebar .resident-text b, .account-sidebar .resident-text small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.account-sidebar > .btn { justify-self: start; margin-left: 5px; }
+.account-loading { display: inline-block; width: 74px; height: 32px; border-radius: 8px; background: var(--surface-2); }
+.account-unavailable { color: var(--text-2); font-size: 12px; }
+@media (max-width: 767px) {
+  .auth-layout { margin-top: 0; margin-bottom: 80px; }
+  .account-name > span:last-child, .account-signout span, .account-header > .btn span { display: none; }
+  .account-header .btn-sm { width: 40px; padding: 0; }
+}
 
 /* Badges */
 .badge {

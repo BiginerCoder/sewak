@@ -29,6 +29,20 @@
       "when": 1791733599474,
       "tag": "0003_add_civic_location",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792232136899,
+      "tag": "0004_conscious_lightspeed",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792232136900,
+      "tag": "0005_persistent_resident_activity",
+      "breakpoints": true
     }
   ]
 }

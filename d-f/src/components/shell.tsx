@@ -1,6 +1,6 @@
 "use client";
 
-import { CIVIC_LOCATIONS, CURRENT_RESIDENT, DEFAULT_LOCATION_ID, WARD, caseNumber, initials } from "@/lib/constants";
+import { CIVIC_LOCATIONS, DEFAULT_LOCATION_ID, WARD, caseNumber } from "@/lib/constants";
 import {
   ClipboardList,
   CircleDot,
@@ -22,6 +22,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { ThemeToggle } from "./ThemeToggle";
 import { LocationPicker } from "./LocationPicker";
+import { AccountAccess } from "./AccountAccess";
 
 type Item = { id: string; label: string; href: string; icon: LucideIcon };
 const GROUPS: { title: string; items: Item[] }[] = [
@@ -128,13 +129,7 @@ export function Sidebar() {
           </span>
         </div>
         <ThemeToggle variant="row" />
-        <Link href="/profile" className="resident-row" aria-label={`Profile: ${CURRENT_RESIDENT}`} data-label={CURRENT_RESIDENT}>
-          <span className="avatar">{initials(CURRENT_RESIDENT)}</span>
-          <span className="resident-text">
-            <b>{CURRENT_RESIDENT}</b>
-            <small>Demo resident</small>
-          </span>
-        </Link>
+        <AccountAccess variant="sidebar" />
         <div className="demo-pill" title="All cases, residents and contacts are sample data" role="note">
           <ShieldCheck size={14} aria-hidden />
           <span className="demo-text">Demo data only</span>
@@ -212,9 +207,7 @@ export function Header() {
             <span className="btn-label">Report</span>
           </Link>
         )}
-        <Link href="/profile" className="avatar" aria-label={`Profile: ${CURRENT_RESIDENT}`} title={CURRENT_RESIDENT}>
-          {initials(CURRENT_RESIDENT)}
-        </Link>
+        <AccountAccess variant="header" />
       </div>
     </header>
   );

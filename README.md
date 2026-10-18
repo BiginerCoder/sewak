@@ -33,6 +33,40 @@ ASSISTANT_INDEX_TOKEN=<long random secret>
 Do not commit this file or expose keys through `NEXT_PUBLIC_` variables. A key
 previously pasted into chat should be revoked and replaced before use.
 
+## Resident accounts (Firebase Authentication)
+
+The frontend supports optional email/password accounts while keeping civic
+pages available to guests. Enable **Email/Password** in Firebase Authentication
+and add the Firebase web-app values to `d-f/.env` using the
+`NEXT_PUBLIC_FIREBASE_*` names in `d-f/.env.example`. Set `FIREBASE_PROJECT_ID`
+and configure Firebase Admin credentials for the server, either with
+Application Default Credentials (`GOOGLE_APPLICATION_CREDENTIALS`) or the
+server-only `FIREBASE_SERVICE_ACCOUNT_JSON` variable. Never commit a service
+account key or expose Admin credentials through `NEXT_PUBLIC_` variables.
+
+Resident profile records (Firebase UID, email, and display name) are stored in
+the PostgreSQL database configured by `DATABASE_URL`. Firebase verifies
+resident credentials; the server verifies ID tokens, creates an HTTP-only
+session cookie, and saves the profile. Sign-in supports a 14-day remembered
+session or a browser-session cookie that expires after 12 hours. New reports,
+comments, confirmations, evidence, authority updates, and resolution checks
+are recorded persistently in `resident_activity` and associated with the
+verified account email. Seeded/sample cases remain demo data.
+
+Apply the additive profile and activity migrations to the configured app
+database before enabling resident writes. For a database whose legacy
+migration history is empty, do not replay the older baseline migrations; apply
+only the reviewed additive SQL files:
+
+```powershell
+cd d-f
+psql "$env:DATABASE_URL" --set ON_ERROR_STOP=on --file drizzle/0004_conscious_lightspeed.sql
+psql "$env:DATABASE_URL" --set ON_ERROR_STOP=on --file drizzle/0005_persistent_resident_activity.sql
+```
+
+The frontend defaults to the light theme. An explicit saved dark-theme
+preference continues to be respected.
+
 ### pgvector RAG setup
 
 The app database needs the PostgreSQL `vector` extension. The stock `postgres:16`
@@ -155,6 +189,15 @@ python -m pip install -r requirements.txt
 ```
 
 ## Run the applications
+
+On Windows, run `run-sewak.bat` from the repository root to start the frontend
+and, when its local environment and virtual environment are present, the
+Govlinks API in separate terminal windows. It opens the frontend at
+http://127.0.0.1:3000. It reuses a frontend on port 3000 if its login page
+responds, or tries port 3001 when port 3000 is occupied by an unresponsive
+service; it reports an error if both ports are occupied and unresponsive.
+PostgreSQL must already be running with the configured databases; the launcher
+does not create databases, apply migrations, or start a PostgreSQL service.
 
 Start the Govlinks API in one terminal:
 

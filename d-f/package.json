@@ -19,6 +19,8 @@
     "@tabler/icons-react": "^3.49.0",
     "dotenv": "17.3.1",
     "drizzle-orm": "0.45.2",
+    "firebase": "^13.0.0",
+    "firebase-admin": "^14.5.0",
     "lucide-react": "^1.53.0",
     "next": "16.2.6",
     "pg": "8.20.0",

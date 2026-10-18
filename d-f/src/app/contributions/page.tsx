@@ -1,5 +1,6 @@
 import { IssueCard, PageHead, StatusBadge } from "@/components/ui";
 import { getContributions } from "@/lib/queries";
+import { getResidentProfile } from "@/lib/auth-session";
 import { Plus } from "lucide-react";
 import Link from "next/link";
 
@@ -7,7 +8,8 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "My contributions" };
 
 export default async function ContributionsPage() {
-  const c = await getContributions();
+  const resident = await getResidentProfile();
+  const c = await getContributions(resident?.email);
   return (
     <>
       <PageHead

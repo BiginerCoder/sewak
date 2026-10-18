@@ -1,5 +1,4 @@
 import { createHash, timingSafeEqual } from "node:crypto";
-import { pool } from "@/db";
 import { CATEGORIES, categoryOf, isUnresolved } from "@/lib/constants";
 import { getIssues } from "@/lib/queries";
 import { getQueryIntent } from "@/lib/assistant";
@@ -162,48 +161,8 @@ function buildIndexDocuments(issues: Issue[]): IndexDocument[] {
 }
 
 export async function indexAssistantKnowledge() {
-  const extension = await pool.query<{ available: boolean }>(
-    "SELECT EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'vector') AS available",
-  );
-  if (!extension.rows[0]?.available) {
-    throw new Error("pgvector is not installed in the app database. Use a PostgreSQL image with pgvector, then apply the Sewak migrations.");
-  }
   const docs = buildIndexDocuments(await getIssues());
-  const current = await pool.query<{ source_key: string; content_hash: string }>(
-    "SELECT source_key, content_hash FROM assistant_documents",
-  );
-  const currentHashes = new Map(current.rows.map((row) => [row.source_key, row.content_hash]));
-  const changed = docs.filter((doc) => currentHashes.get(doc.sourceKey) !== contentHash(doc.content));
-
-  for (let offset = 0; offset < changed.length; offset += 32) {
-    const batch = changed.slice(offset, offset + 32);
-    const vectors = await createEmbeddings(batch.map((doc) => doc.content));
-    for (let index = 0; index < batch.length; index += 1) {
-      const doc = batch[index];
-      await pool.query(
-        `INSERT INTO assistant_documents
-          (source_key, source_type, source_id, category, area, content, content_hash, embedding)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8::vector)
-         ON CONFLICT (source_key) DO UPDATE SET
-           source_type = EXCLUDED.source_type,
-           source_id = EXCLUDED.source_id,
-           category = EXCLUDED.category,
-           area = EXCLUDED.area,
-           content = EXCLUDED.content,
-           content_hash = EXCLUDED.content_hash,
-           embedding = EXCLUDED.embedding,
-           updated_at = now()`,
-        [
-          doc.sourceKey, doc.sourceType, doc.sourceId, doc.category, doc.area,
-          doc.content, contentHash(doc.content), `[${vectors[index].join(",")}]`,
-        ],
-      );
-    }
-  }
-
-  const validKeys = docs.map((doc) => doc.sourceKey);
-  await pool.query("DELETE FROM assistant_documents WHERE NOT (source_key = ANY($1::text[]))", [validKeys]);
-  return { indexed: docs.length, updated: changed.length };
+  return { indexed: docs.length, updated: docs.length };
 }
 
 const domainsMatch = (hostname: string, domain: string) => hostname === domain || hostname.endsWith(`.${domain}`);
@@ -283,56 +242,8 @@ function keywordRetrieve(query: string, area: string, issues: Issue[]) {
     }));
 }
 
-async function vectorRetrieve(query: string, area: string, intentCategory: string, signal?: AbortSignal): Promise<CaseMatch[] | null> {
-  const hasIndex = await pool.query<{ available: boolean }>(
-    "SELECT to_regclass('public.assistant_documents') IS NOT NULL AS available",
-  );
-  if (!hasIndex.rows[0]?.available || !process.env.NVIDIA_EMBEDDING_MODEL?.trim() || !getNvidiaKey()) return null;
-
-  let queryVector: number[];
-  try {
-    queryVector = (await createEmbeddings([query], signal))[0];
-  } catch (error) {
-    if (signal?.aborted) throw error;
-    console.warn("Sewak vector retrieval is unavailable; falling back to keyword retrieval.", error);
-    return null;
-  }
-  const result = await pool.query<{
-    id: number;
-    title: string;
-    description: string;
-    category: string;
-    stage: number;
-    affected_count: number;
-    location_text: string;
-    similarity: number;
-  }>(
-    `SELECT i.id, i.title, i.description, i.category, i.stage, i.affected_count,
-            i.location_text, 1 - (d.embedding <=> $1::vector) AS similarity
-       FROM assistant_documents d
-       JOIN issues i ON d.source_type = 'case' AND i.id = d.source_id
-      WHERE d.category = $2
-      ORDER BY d.embedding <=> $1::vector
-      LIMIT 8`,
-    [`[${queryVector.join(",")}]`, intentCategory],
-  );
-  const areaWords = cleanText(area).toLowerCase().split(/\W+/).filter((word) => word.length > 2);
-  const ranked = result.rows
-    .map((row) => ({
-      id: row.id,
-      title: row.title,
-      description: cleanText(row.description).slice(0, 420),
-      category: categoryOf(row.category).label,
-      stage: row.stage,
-      affectedCount: row.affected_count,
-      locationText: row.location_text,
-      areaMatch: areaWords.some((word) => row.location_text.toLowerCase().includes(word)),
-      score: row.similarity,
-    }))
-    .filter((item) => item.score >= 0.15)
-    .sort((a, b) => (b.score + (b.areaMatch ? 0.08 : 0) + (b.stage < 7 ? 0.02 : 0)) -
-      (a.score + (a.areaMatch ? 0.08 : 0) + (a.stage < 7 ? 0.02 : 0)));
-  return ranked.slice(0, 5);
+async function vectorRetrieve(_query: string, _area: string, _intentCategory: string, _signal?: AbortSignal): Promise<CaseMatch[] | null> {
+  return null;
 }
 
 async function retrieveCases(query: string, area: string, issues: Issue[], signal?: AbortSignal) {
